@@ -13,7 +13,12 @@ int main(int argc, char **argv) {
 	}
 	node *rootnode;
 
+	/* parse the given source file */
 	yyparse(&rootnode);
 
+	/* print out the AST */
 	print_ast(rootnode, 0);
+
+	/* House Keeping */
+	free_node(rootnode);
 }

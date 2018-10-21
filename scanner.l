@@ -7,46 +7,49 @@
 #include "bison.h"
 %}
 
+/* Definitions */
 LIT       [0-9]+(\.[0-9]+)?
 SLIT      ["][^"]*["]
-ID       [a-zA-Z_]+[a-zA-Z0-9_]*
-TYPE      "int" | "cint" | "float" | "sfloat" | "void"
-NOALIAS   "noalias ref"
+ID        [a-zA-Z_]+[a-zA-Z0-9_]*
+TYPE      "int"|"cint"|"float"|"sfloat"|"void"
+NOALIAS   "noalias"
 REF       "ref"
+COMMENT   "#".*
 
-/* Grammar */
+/* Grammar & Tokens */
 %%
-"+"      {return ADD;}
-"*"     {return MUL;}
-"-"      {return SUB;}
-"="      {return ASSIGN;}
-"=="     {return EQ;}
-"<"      {return LT;}
-">"       {return GT;}
-"&&"     {return AND;}
-"||"     {return OR;}
-"("      {return OPREN;}
-")"      {return CPREN;}
-"{"      {return OBRACK;}
-"}"      {return CBRACK;}
-";"       {return SEMICOL;}
-","      {return COMMA;}
+"#".*       { /* Do nothing when encountered comments */}
+"+"         {return ADD;}
+"*"         {return MUL;}
+"-"         {return SUB;}
+"/"         {return DIV;}
+"="         {return ASSIGN;}
+"=="        {return EQ;}
+"<"         {return LT;}
+">"         {return GT;}
+"&&"        {return AND;}
+"||"        {return OR;}
+"("         {return OPREN;}
+")"         {return CPREN;}
+"{"         {return OBRACK;}
+"}"         {return CBRACK;}
+";"         {return SEMICOL;}
+","         {return COMMA;}
 "$"         {return DOLLAR;}
-"!"        {return NOT;}
+"!"         {return NOT;}
 "return"    {return RETURN;}
-"if"       {return IF;}
-"while"    {return WHILE;}
-"else"     {return ELSE;}
-"print"    {return PRINT;}
-"extern"   {return EXTERN;}
-"def"       {return DEF; }
-{NOALIAS} {yylval.str = strdup(yytext); return NOALIAS;}
-{REF}     {yylval.str = strdup(yytext); return REF;}
-{TYPE}    {yylval.str = atoi(yytext); return TYP;}
-{LIT}     {yylval.num = atoi(yytext); return NUMBER;}
-{SLIT}    {yylval.str = strdup(yytext); return STRINGS;}
-{ID}      {yylval.str = strdup(yytext); return ID;}
-[ \t]     { /* ignore whitespaces */ }
-\n        {return 0;}
-.         {printf("Mistery character %s\n", yytext);}
+"if"        {return IF;}
+"while"     {return WHILE;}
+"else"      {return ELSE;}
+"print"     {return PRINT;}
+"extern"    {return EXTERN;}
+"def"       {return DEF;}
+[ \t\n]     { /* ignore whitespaces */ }
+{LIT}       {yylval.num = atof(yytext); return NUMBER;}
+{SLIT}      {yylval.str = strdup(yytext); return STRINGS;}
+{NOALIAS}   {yylval.str = strdup(yytext); return NOALIAS;}
+{REF}       {yylval.str = strdup(yytext); return REF;}
+{TYPE}      {yylval.str = strdup(yytext); return TYPES;}
+{ID}        {yylval.str = strdup(yytext); return ID;}
+.           {printf("Mistery character %s\n", yytext);}
 %%
