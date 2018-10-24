@@ -12,7 +12,7 @@ void yyerror (struct astnode **rootnode, char const *s);
 %union{
   int num;
   char var;
-	char *str;
+  char *str;
   struct astnode *node;
 }
 

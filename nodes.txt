@@ -1,0 +1,23 @@
+exp: T_EXP, "exp"?
+binop: T_BINOP, "name: binop\n"
+binary op: T_BOP, "op: %s\n"
+lit: T_LIT, "name: lit\nvalue: %d\n"
+
+var: T_VAR, "name: varval\nvar: %s\n" directly search by pointer!
+globid: T_GLOB, "globid: %s\n"
+uop: T_UNAOP, "name: uop\n"
+unary op: T_UOP, "op: %s\nexp:\n"
+print: T_PRINT, also check node->left,
+1.
+"name: printslit"
+"string: \"%s\n\""
+2.
+"name: print"
+"exp:"
+
+stmt: T_STMTS, "name: stmts\n" "stmts:\n" "\t-\n"
+blk: T_BLK, "blk:\n" "\tname: blk\n" "\tcontents:\n"
+
+exps: T_EXPS, "name: exps\n"
+
+funcall: <globid> "(" exps ")"

@@ -79,6 +79,8 @@ node *add_type(char *name) {
 	return add_node(T_TYPE, "type", name, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
+//add RETURN node
+
 void put_indent(int dent) {
 	for (int i=0; i<dent; ++i)
 		printf("  ");
@@ -91,8 +93,8 @@ void put_op(char *op, int dent) {
 
 void put_str(char *str1, char *str2, int dent) {
 	put_indent(dent);
-	if (strlen(str1)==0) printf("%s:\n", str2);
-	else printf("%s: %s\n", str1, str2);
+	if (strlen(str1)==0) printf("%s\n", str2);
+	else printf("%s%s\n", str1, str2);
 }
 
 void put_strn(char *str, int value, int dent) {
@@ -103,114 +105,193 @@ void put_strn(char *str, int value, int dent) {
 void print_ast(node *n, int dent) {
 	// Case of Constants
 	switch (n->tag) {
-		case T_PROG:
-			put_str("name: prog\t", n->name, dent);
+		case T_PROG: //name:prog
+			put_str("name: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_EXTERNS:
-			put_str("name: externs\t", n->name, dent);
+		case T_EXTERNS: //name: externs
+			put_str("name: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_EXTERN:
-			put_str("name: extern\t", n->name, dent);
+		case T_EXTERN: //name: extern
+			put_str("name: ", n->name, dent);
 			if (n->type != NULL) print_ast(n->type, dent+1);
 			if (n->globid != NULL) print_ast(n->globid, dent+1);
 			if (n->tdecls != NULL) print_ast(n->tdecls, dent+1);
 			break;
-		case T_FUNCS:
-			put_str("name: funcs\t", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
-		case T_FUNC:
-			put_str("name: func\t", n->name, dent);
-			if (n->type != NULL) print_ast(n->type, dent+1);
-			if (n->globid != NULL) print_ast(n->globid, dent+1);
-			if (n->vdecls != NULL) print_ast(n->vdecls, dent+1);
+		case T_FUNCS: //name: funcs
+			if(n->left->tag == T_FUNC) {
+				put_str("name: ", n->name, dent);
+				put_str("", "funcs:", dent);
+				put_str("", "-", dent+1);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else {
+				if (n->left != NULL) print_ast(n->left, dent);
+				if (n->right != NULL) print_ast(n->right, dent);
+				break;
+			}
+		case T_FUNC: //name: func
+			put_str("name: ", n->name, dent);
+			put_str("ret_type: ",n->type->str, dent);
+			// if (n->type != NULL) print_ast(n->type, dent+1);
+			if (n->globid != NULL) print_ast(n->globid, dent);
+			put_str("", "blk:", dent);
 			if (n->blk != NULL) print_ast(n->blk, dent+1);
+			if (n->vdecls != NULL) print_ast(n->vdecls, dent);
 			break;
-		case T_BLK:
-			put_str("name: blk\t", n->name, dent);
+		case T_BLK: //name: blk
+			put_str("name: ", n->name, dent);
+			put_str("", "contents:", dent);
+			//contents:
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_STMTS:
-			put_str("name: stmts\t", n->name, dent);
+		case T_STMTS: //name:stmts
+			if(n->left->tag == T_STMT) {
+				put_str("name: ", n->name, dent);
+				put_str("", "stmts:", dent);
+				put_str("", "-",dent+1);
+				if (n->left != NULL) print_ast(n->left, dent+2);
+				if (n->right != NULL) print_ast(n->right, dent+2);
+				break;
+			}
+			else {
+				if (n->left != NULL) print_ast(n->left, dent);
+				if (n->right != NULL) print_ast(n->right, dent);
+				break;
+			}
+		case T_STMT: //name: stmt
+			//name == "if", should add "cond:\n" and else_stmt
+			if(strcmp(n->name, "return") == 0) {
+				put_str("", "name: ret", dent);
+				put_str("", "exp: ",dent);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else if(strcmp(n->name, "assign") == 0) {
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else if(strcmp(n->name, "assign") == 0) {
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				break;
+			}
+			else if(strcmp(n->name, "while") == 0) {
+				put_str("name: ", n->name, dent);
+				put_str("", "cond:", dent);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				put_str("", "stmt:", dent);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+
+			put_str("name: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_STMT:
-			put_str("name: stmt\t", n->name, dent);
+		case T_EXPS: // name:exps
+			put_str("name: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_EXPS:
-			put_str("name: exps\t", n->name, dent);
+		case T_EXP: //name: exp
+			if(strcmp(n->name, "exp") == 0) {
+				put_str("", "exp:", dent);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else if(strcmp(n->name, "binop") == 0 || strcmp(n->name, "uop") == 0) {
+				put_str("name: ", n->name, dent);
+				if (n->left != NULL) print_ast(n->left, dent);
+				break;
+			}
+			else if(strcmp(n->name, "var") == 0) {
+				// put_str("var: ", n->str, dent);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+			}
+			else if(strcmp(n->name, "globid") == 0) {
+				put_str("", "exp:", dent);
+				put_str("","name: funccall", dent+1);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				put_str("", "params:", dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+			}
+
+		case T_BINOP: //name: binop
+			put_str("op: ", n->name, dent);
+			printf("BINOP, n->name: %s\n",n->name );
+			put_str("", "lhs: ", dent);
+			if (n->left != NULL) print_ast(n->left, dent+1);
+			put_str("", "rhs: ", dent);
+			if (n->right != NULL) print_ast(n->right, dent+1);
+			break;
+		case T_UOP: //name: uop
+			put_str("op: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_EXP:
-			put_str("name: exp\t", n->name, dent);
+		case T_SLIT: //name: slit
+			put_str("name: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_BINOP:
-			put_str("name: binop\t", n->name, dent);
+		case T_LIT: //name: lit
+			put_str("name: ", n->name, dent);
+			put_indent(dent);
+			printf("value: %lf\n", n->val);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_UOP:
-			put_str("name: uop\t", n->name, dent);
+		case T_VAR: //name: var
+			put_str("", "name: varval", dent);
+			put_str("var: ", n->str, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_SLIT:
-			put_str("name: slit\t", n->name, dent);
+		case T_ID: //name: identifier
+			put_str("name: ", n->str, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_LIT:
-			put_str("name: lit\t", n->name, dent);
+		case T_GLOB: //name: globid
+			put_str("globid: ", n->str, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_VAR:
-			put_str("name: var\t", n->str, dent);
+		case T_TYPE: //name: type
+			put_str("name: ", n->str, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_ID:
-			put_str("name: identifier\t", n->str, dent);
+		case T_VDECLS: //name: vdecls
+			put_str("name: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_GLOB:
-			put_str("name: globid\t", n->str, dent);
+		case T_TDECLS: //name: tdecls
+			put_str("", "tdecls:", dent);
+			put_str("name: ", n->name, dent+1);
+			put_str("", "vars: ", dent+1);
+			put_str("", "-", dent+2);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_TYPE:
-			put_str("name: type\t", n->str, dent);
+		case T_VDECL: //name: vdecl
+			put_str("node: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
-		case T_VDECLS:
-			put_str("name: vdecls\t", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
-		case T_TDECLS:
-			put_str("name: tdecls\t", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
-		case T_VDECL:
-			put_str("name: vdecl\t", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
+		// case T_RETURN
+
 		default:
 			printf("unrecognized\n");
 			break;
