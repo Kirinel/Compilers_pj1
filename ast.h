@@ -21,7 +21,7 @@ enum {
 
 struct astnode {
   int tag;
-  char name[10];
+  char name[32];
   char *str;
   double val;
   struct astnode *left;

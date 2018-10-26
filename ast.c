@@ -107,19 +107,34 @@ void print_ast(node *n, int dent) {
 	switch (n->tag) {
 		case T_PROG: //name:prog
 			put_str("name: ", n->name, dent);
+			put_str("", "funcs:", dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
 		case T_EXTERNS: //name: externs
-			put_str("name: ", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
+			if(n->left->tag == T_EXTERNS) {
+				if (n->left != NULL) print_ast(n->left, dent);
+				if (n->right != NULL) print_ast(n->right, dent);
+				break;
+			}
+			else if(n->left->tag == T_EXTERN) {
+				put_str("", "externs:", dent);
+				put_str("name: ", n->name, dent+1);
+				put_str("", "externs:", dent+1);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+
 		case T_EXTERN: //name: extern
 			put_str("name: ", n->name, dent);
-			if (n->type != NULL) print_ast(n->type, dent+1);
-			if (n->globid != NULL) print_ast(n->globid, dent+1);
-			if (n->tdecls != NULL) print_ast(n->tdecls, dent+1);
+			if (n->type != NULL) {
+				put_indent(dent);
+				printf("ret_");
+				print_ast(n->type, 0);
+			}
+			if (n->globid != NULL) print_ast(n->globid, dent);
+			if (n->tdecls != NULL) print_ast(n->tdecls, dent);
 			break;
 		case T_FUNCS: //name: funcs
 			if(n->left->tag == T_FUNC) {
@@ -127,12 +142,13 @@ void print_ast(node *n, int dent) {
 				put_str("", "funcs:", dent);
 				put_str("", "-", dent+1);
 				if (n->left != NULL) print_ast(n->left, dent+1);
-				if (n->right != NULL) print_ast(n->right, dent+1);
+				//if (n->right != NULL) print_ast(n->right, dent+1);
 				break;
 			}
 			else {
 				if (n->left != NULL) print_ast(n->left, dent);
-				if (n->right != NULL) print_ast(n->right, dent);
+				put_str("", "-", dent);
+				if (n->right != NULL) print_ast(n->right, dent+1);
 				break;
 			}
 		case T_FUNC: //name: func
@@ -156,34 +172,42 @@ void print_ast(node *n, int dent) {
 				put_str("name: ", n->name, dent);
 				put_str("", "stmts:", dent);
 				put_str("", "-",dent+1);
-				if (n->left != NULL) print_ast(n->left, dent+2);
-				if (n->right != NULL) print_ast(n->right, dent+2);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				// if (n->right != NULL) print_ast(n->right, dent+1);
 				break;
 			}
 			else {
 				if (n->left != NULL) print_ast(n->left, dent);
-				if (n->right != NULL) print_ast(n->right, dent);
+
+				if (n->right != NULL) {
+					put_str("", "-",dent);
+					print_ast(n->right, dent+1);
+				}
 				break;
 			}
 		case T_STMT: //name: stmt
 			//name == "if", should add "cond:\n" and else_stmt
+
 			if(strcmp(n->name, "return") == 0) {
+				// put_str("", "-", dent);
+				// dent++;
 				put_str("", "name: ret", dent);
 				put_str("", "exp: ",dent);
 				if (n->left != NULL) print_ast(n->left, dent+1);
 				if (n->right != NULL) print_ast(n->right, dent+1);
 				break;
 			}
-			else if(strcmp(n->name, "assign") == 0) {
+			else if(strcmp(n->name, "vardeclstmt") == 0) {
+				put_str("name: ", n->name, dent);
+				put_str("", "vdecl:", dent);
 				if (n->left != NULL) print_ast(n->left, dent+1);
 				if (n->right != NULL) print_ast(n->right, dent+1);
 				break;
 			}
-			else if(strcmp(n->name, "assign") == 0) {
-				if (n->left != NULL) print_ast(n->left, dent+1);
-				break;
-			}
+
 			else if(strcmp(n->name, "while") == 0) {
+				// put_str("", "-", dent);
+				// dent++;
 				put_str("name: ", n->name, dent);
 				put_str("", "cond:", dent);
 				if (n->left != NULL) print_ast(n->left, dent+1);
@@ -191,15 +215,53 @@ void print_ast(node *n, int dent) {
 				if (n->right != NULL) print_ast(n->right, dent+1);
 				break;
 			}
+			else if(strcmp(n->name, "if") == 0) {
+				// put_str("", "-", dent);
+				// dent++;
+				put_str("name: ", n->name, dent);
+				put_str("", "cond:", dent);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				put_str("", "stmt:", dent);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else if(strcmp(n->name, "if_stmt") == 0) {
+				if (n->left != NULL) print_ast(n->left, dent);
+				put_str("", "else_stmt:", dent-1);
+				if (n->right != NULL) print_ast(n->right, dent);
+				break;
+			}
+			else if(strcmp(n->name, "print") == 0) {
+				// put_str("", "-", dent);
+				// dent++;
+				put_str("name: ", n->name, dent);
+				put_str("", "exp:", dent);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				break;
+			}
+			else if(strcmp(n->name, "printslit") == 0) {
+				// put_str("", "-", dent);
+				// dent++;
+				put_str("name: ", n->name, dent);
+				if (n->left != NULL) print_ast(n->left, dent);
+				if (n->right != NULL) print_ast(n->right, dent);
+				break;
+			}
+			else if(strcmp(n->name, "expstmt") == 0){
+				put_str("name: ", n->name, dent);
+				put_str("", "exp:", dent);
+				if (n->left != NULL) print_ast(n->left, dent +1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
 
-			put_str("name: ", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
+
 		case T_EXPS: // name:exps
 			put_str("name: ", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
+			put_str("", "exps:", dent);
+			put_str("", "-", dent+1);
+			if (n->left != NULL) print_ast(n->left, dent+2);
+			if (n->right != NULL) print_ast(n->right, dent+2);
 			break;
 		case T_EXP: //name: exp
 			if(strcmp(n->name, "exp") == 0) {
@@ -209,53 +271,80 @@ void print_ast(node *n, int dent) {
 				break;
 			}
 			else if(strcmp(n->name, "binop") == 0 || strcmp(n->name, "uop") == 0) {
-				put_str("name: ", n->name, dent);
+				//printf("11111\n");
 				if (n->left != NULL) print_ast(n->left, dent);
 				break;
 			}
 			else if(strcmp(n->name, "var") == 0) {
 				// put_str("var: ", n->str, dent);
-				if (n->left != NULL) print_ast(n->left, dent+1);
-				if (n->right != NULL) print_ast(n->right, dent+1);
+				// printf("222222\n");
+				if (n->left != NULL) print_ast(n->left, dent);
+				// printf("3333333\n");
+				break;
 			}
 			else if(strcmp(n->name, "globid") == 0) {
 				put_str("", "exp:", dent);
 				put_str("","name: funccall", dent+1);
 				if (n->left != NULL) print_ast(n->left, dent+1);
 				put_str("", "params:", dent+1);
-				if (n->right != NULL) print_ast(n->right, dent+1);
-			}
+				if (n->right != NULL) print_ast(n->right, dent+2);
+			break;
+		}
 
 		case T_BINOP: //name: binop
-			put_str("op: ", n->name, dent);
-			printf("BINOP, n->name: %s\n",n->name );
-			put_str("", "lhs: ", dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			put_str("", "rhs: ", dent);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
+			if(strcmp(n->name, "assign") == 0) {
+				put_str("name: ", n->name, dent);
+				put_str("var: ", n->left->str, dent);
+				put_str("", "exp:", dent);
+				//if (n->left != NULL) print_ast(n->left, dent);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else {
+				put_str("", "name: binop", dent);
+				put_str("op: ", n->name, dent);
+				// printf("BINOP, n->name: %s\n",n->name );
+				put_str("", "lhs: ", dent);
+
+				if (n->left != NULL) {
+					// printf("%s %d\n", n->left->name, T_VAR);
+					if(strcmp(n->left->name, "var") == 0) {
+						put_str("", "name: varval", dent+1);
+					}
+					print_ast(n->left, dent+1);
+				}
+				put_str("", "rhs: ", dent);
+				if (n->right != NULL) {
+					if(strcmp(n->right->name, "var") == 0) {
+						put_str("", "name: varval", dent+1);
+					}
+					print_ast(n->right, dent+1);
+				}
+				break;
+			}
+
 		case T_UOP: //name: uop
 			put_str("op: ", n->name, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
 		case T_SLIT: //name: slit
-			put_str("name: ", n->name, dent);
+			put_str("string: ", n->str, dent);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
 		case T_LIT: //name: lit
 			put_str("name: ", n->name, dent);
 			put_indent(dent);
-			printf("value: %lf\n", n->val);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
+			printf("value: %.0lf\n", n->val);
+			//if (n->left != NULL) print_ast(n->left, dent+1);
+			//if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
 		case T_VAR: //name: var
-			put_str("", "name: varval", dent);
+			//put_str("", "name: varval", dent);
 			put_str("var: ", n->str, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
+			//if (n->left != NULL) print_ast(n->left, dent+1);
+			//if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
 		case T_ID: //name: identifier
 			put_str("name: ", n->str, dent);
@@ -268,27 +357,47 @@ void print_ast(node *n, int dent) {
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
 		case T_TYPE: //name: type
-			put_str("name: ", n->str, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
+			if(strcmp(n->name, "ref") == 0) {
+				// put_indent(dent);
+				// printf("type: %s %s\n", n->name, n->left->name);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else if(strcmp(n->name, "noalias ref") == 0) {
+				//put_indent(dent);
+				//printf("type: %s %s\n", n->name, n->left->str);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+			else {
+				put_str("type: ", n->str, dent);
+				if (n->left != NULL) print_ast(n->left, dent+1);
+				if (n->right != NULL) print_ast(n->right, dent+1);
+				break;
+			}
+
 		case T_VDECLS: //name: vdecls
-			put_str("name: ", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
+			put_str("", "vdecls:", dent);
+			put_str("name: ", n->name, dent+1);
+			put_str("", "vars:", dent+1);
+			put_str("", "-", dent+2);
+			if (n->left != NULL) print_ast(n->left, dent+3);
+			if (n->right != NULL) print_ast(n->right, dent+3);
 			break;
 		case T_TDECLS: //name: tdecls
 			put_str("", "tdecls:", dent);
 			put_str("name: ", n->name, dent+1);
-			put_str("", "vars: ", dent+1);
+			put_str("", "types: ", dent+1);
 			put_str("", "-", dent+2);
 			if (n->left != NULL) print_ast(n->left, dent+1);
 			if (n->right != NULL) print_ast(n->right, dent+1);
 			break;
 		case T_VDECL: //name: vdecl
 			put_str("node: ", n->name, dent);
-			if (n->left != NULL) print_ast(n->left, dent+1);
-			if (n->right != NULL) print_ast(n->right, dent+1);
+			if (n->left != NULL) print_ast(n->left, dent);
+			if (n->right != NULL) print_ast(n->right, dent);
 			break;
 		// case T_RETURN
 

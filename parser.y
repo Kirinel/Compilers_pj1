@@ -31,7 +31,7 @@ void yyerror (struct astnode **rootnode, char const *s);
 /* Non Terminal Type Declaration */
 %type <node> prog extern func externs
 %type <node> stmts stmt blk funcs
-%type <node> exp exps ifelse type
+%type <node> exp exps ifstatement type
 %type <node> binop vdecls tdecls vdecl
 %type <node> var uop globid
 %type <node> slit
@@ -94,22 +94,22 @@ stmt
 		: blk { $$ = add_astnode(T_STMT, "blk", $1, NULL); }
 		| RETURN exp SEMICOL { $$ = add_astnode(T_STMT, "return", $2, NULL); }
 		| RETURN SEMICOL { $$ = add_astnode(T_STMT, "return", NULL, NULL); }
-		| vdecl ASSIGN exp SEMICOL { $$ = add_astnode(T_STMT, "assign", $1, $3); }
-		| exp SEMICOL { $$ = add_astnode(T_STMT, "exp", $1, NULL); }
+		| vdecl ASSIGN exp SEMICOL { $$ = add_astnode(T_STMT, "vardeclstmt", $1, $3); }
+		| exp SEMICOL { $$ = add_astnode(T_STMT, "expstmt", $1, NULL); }
 		| WHILE OPREN exp CPREN stmt { $$ = add_astnode(T_STMT, "while", $3, $5); }
-		| IF OPREN exp CPREN ifelse { $$ = add_astnode(T_STMT, "if", $3, $5); }
+		| IF OPREN exp CPREN ifstatement { $$ = add_astnode(T_STMT, "if", $3, $5); }
 		| PRINT exp SEMICOL { $$ = add_astnode(T_STMT, "print", $2, NULL); }
 		| PRINT slit SEMICOL { $$ = add_astnode(T_STMT, "printslit", $2, NULL); }
 		;
 
-ifelse
+ifstatement
 		: stmt ELSE stmt { $$ = add_astnode(T_STMT, "if_stmt", $1, $3); }
 		| stmt %prec LOWER_THAN_ELSE { $$ = add_astnode(T_STMT, "stmt", $1, NULL); }
 		;
 
 exps
 		: exps COMMA exp { $$ = add_astnode(T_EXPS, "exps", $3, $1); }
-		| exp { $$ = add_astnode(T_EXPS, "exp", $1, NULL); }
+		| exp { $$ = add_astnode(T_EXPS, "exps", $1, NULL); }
 		;
 
 exp
@@ -153,7 +153,7 @@ globid
 		;
 
 type
-		: NOALIAS REF type { $$ = add_astnode(T_TYPE, "noalias", $3, NULL); }
+		: NOALIAS REF type { $$ = add_astnode(T_TYPE, "noalias ref", $3, NULL); }
 		| REF type { $$ = add_astnode(T_TYPE, "ref", $2, NULL); }
 		| TYPES { $$ = add_type($1); }
 		;
