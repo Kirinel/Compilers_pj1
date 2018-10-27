@@ -1,0 +1,6 @@
+#if ambiguity
+#t_type pointer issue
+#varval
+
+declaration & assignment: no varval
+binop-op, print, funccall

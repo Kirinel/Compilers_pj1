@@ -4,19 +4,32 @@
 typedef struct astnode node;
 
 enum {
-  T_PROG,
-  T_FUNC, T_EXTERN,
-  T_LIT, T_SLIT, T_TDECLS, T_VDECL,
-  T_ADD, T_MUL, T_SUB, T_DIV,
-  T_ASSIGN, T_EQ, T_LT, T_GT, T_AND, T_OR, T_BOP, T_UOP,
-  T_VAL, T_VAR, T_ID, T_GLOB,
-  T_STMT, T_EXP,
-  T_PRINT,
-  T_BINOP, T_UNARY,
-  T_BLK, T_STMTS,
-  T_RETURN, T_WHILE, T_IF, T_IFELSE,
-  T_NOALIAS, T_REF, T_VDECLS, T_TDECL, T_TYPE,
-  T_FUNCS, T_EXTERNS, T_EXPS
+  // Major nodes, subnodes (possible names)
+  T_PROG,// "prog"
+  T_EXTERNS,// "externs"
+  T_EXTERN,// "extern"
+  T_FUNCS,// "funcs"
+  T_FUNC,// "func"
+  T_BLK,// "blk"
+  T_STMTS,// "stmts"
+  T_STMT,// "stmt_raw"
+  T_OPEN_STMT,
+  T_CLOSED_STMT,// "blk" (d), "return", "vardeclstmt", "expstmt", "while", "if", "print", "printslit"
+  T_SIMPLE_STMT,
+  //T_IFELSE,// "if_stmt", "stmt"
+  T_EXPS,// "exps"
+  T_EXP,// "exp", "binop", "uop", NUMBER, "var", "globid", "globid"
+  T_BINOP,// "add", "mul", "sub", "div", "assign", "eq", "lt", "gt", "and", "or"
+  T_UOP,// "not", "neg"
+  T_ID,
+  T_LIT,
+  T_SLIT,
+  T_VAR,
+  T_GLOB,
+  T_TYPE,// "type", "noalias ref", "ref", "type"
+  T_VDECLS,// "vdecls"
+  T_TDECLS,// "tdecls"
+  T_VDECL// "vdecl"
 };
 
 struct astnode {
@@ -31,13 +44,18 @@ struct astnode {
   struct astnode *tdecls;
   struct astnode *vdecls;
   struct astnode *blk;
+  struct astnode *expr;
+  struct astnode *stmt1;
+  struct astnode *stmt2;
 };
 
-node *add_node(int tag, char *name, char *str, double val, node *left, node *right, node *type, node *globid, node *tdecls, node *vdecls, node *blk);
+node *add_node(int tag, char *name, char *str, double val, node *left, node *right, node *type, node *globid, node *tdecls, node *vdecls, node *blk, node *expr, node *stmt1, node *stmt2);
 node *add_astnode(int, char *, node *, node *);
 node *add_func(node *, node *, node *, node *);
 node *add_extern(node *, node *, node *);
+node *add_ocstmt(int, char *, node *, node *, node *);
 node *add_lit(double);
+node *add_flit(double);
 node *add_slit(char *);
 node *add_var(char *);
 node *add_globid(char *);

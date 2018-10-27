@@ -1,4 +1,0 @@
-{NOALIAS}   {yylval.str = strdup(yytext); return NOALIAS;}
-{REF}       {yylval.str = strdup(yytext); return REF;}
-{ID}        {yylval.str = strdup(yytext); return ID;}
-{TYPE}      {yylval.str = strdup(yytext); return TYP;}
