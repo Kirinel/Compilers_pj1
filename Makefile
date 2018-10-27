@@ -7,16 +7,16 @@ CFLAGS=	-g -std=gnu99 -o
 target:
 	bison parser.y
 	flex scanner.l
-	$(CC) $(CFLAGS) out main.c flex.c bison.c ast.c
+	$(CC) $(CFLAGS) ./bin/ekcc main.c flex.c bison.c ast.c
 
 test1:
-	./out test1.ek > test1.yaml
+	./bin/ekcc -o ./test/test1.yaml ./test/test1.ek
 
 test2:
-	./out test2.ek > test2.yaml
+	./bin/ekcc -o ./test/test2.yaml ./test/test2.ek 
 
 debug:
-	./out debug.ek > debug.yaml
+	./bin/ekcc debug.ek > debug.yaml
 
 clean:
-	rm -f flex.c flex.h bison.c bison.h out test1.yaml test2.yaml debug.yaml
+	rm -f flex.c flex.h bison.c bison.h ./bin/ekcc ./test/test1.yaml ./test/test2.yaml debug.yaml

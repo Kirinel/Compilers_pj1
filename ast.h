@@ -1,5 +1,6 @@
 #ifndef AST_H
 #define AST_H
+#include <stdio.h>
 
 typedef struct astnode node;
 
@@ -62,6 +63,6 @@ node *add_globid(char *);
 node *add_type(char *);
 void free_node(node *);
 
-void print_ast(node *, int);
+void print_ast(node *, int, FILE *);
 
 #endif
