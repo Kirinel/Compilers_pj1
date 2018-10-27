@@ -16,8 +16,11 @@ int main(int argc, char **argv) {
 	/* parse the given source file */
 	yyparse(&rootnode);
 
+
 	/* print out the AST */
+	printf("---\n");
 	print_ast(rootnode, 0);
+	printf("...\n");
 
 	/* House Keeping */
 	free_node(rootnode);

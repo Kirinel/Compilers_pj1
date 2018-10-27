@@ -18,7 +18,7 @@ COMMENT   "#".*
 
 /* Grammar & Tokens */
 %%
-"#".*       { /* Do nothing when encountered comments */}
+{COMMENT}   { /* Do nothing when encountered comments */}
 "+"         {return ADD;}
 "*"         {return MUL;}
 "-"         {return SUB;}
@@ -44,12 +44,12 @@ COMMENT   "#".*
 "print"     {return PRINT;}
 "extern"    {return EXTERN;}
 "def"       {return DEF;}
-[ \t\n]     { /* ignore whitespaces */ }
-{LIT}       {yylval.num = atof(yytext); return NUMBER;}
-{SLIT}      {yylval.str = strdup(yytext); return STRINGS;}
 {NOALIAS}   {yylval.str = strdup(yytext); return NOALIAS;}
 {REF}       {yylval.str = strdup(yytext); return REF;}
 {TYPE}      {yylval.str = strdup(yytext); return TYPES;}
+{LIT}       {yylval.num = atof(yytext);   return NUMBER;}
+{SLIT}      {yylval.str = strdup(yytext); return STRINGS;}
 {ID}        {yylval.str = strdup(yytext); return ID;}
+[ \t\n]     { /* ignore whitespaces */ }
 .           {printf("Mistery character %s\n", yytext);}
 %%

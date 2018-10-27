@@ -1,0 +1,24 @@
+#funcs:
+  1. funcs now prints with correct indention
+#extern:
+  1. externs now prints with correct indention
+  2. bug in add_astnode found: not correctly appending (recursive) types
+#tdecls:
+  1. tdecls is now prints the correct list of types
+#vdecls:
+  1. vdecls is now recursive
+#uop
+  1. fix uop does not print with "name: uop"
+#stmt (new simple_stmt)
+  1. case block missing, inserted
+  2. align exp with vardeclstmt, no right indent
+#stmts
+  1. stmts now prints with correct indention
+#exps
+  1. exps is now recursive
+#uop
+  1. "neg" to "minus"
+#lit
+  1. now compatible with floats
+#exp
+  1. fix unknown behavior of "exp:"
