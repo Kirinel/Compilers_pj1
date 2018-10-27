@@ -37,15 +37,16 @@ void yyerror (struct astnode **rootnode, char const *s);
 %type <node> lit slit
 
 
-/* Precedence */
-%left ASSIGN
-%left AND OR
-%left EQ LT GT
-%left ADD SUB
-%left MUL DIV
-%left NEG
-%left OPREN CPREN NOT
-
+/* Precedence - from the requirement page */
+%right  ASSIGN
+%left   OR
+%left   AND
+%left   EQ
+%left   LT GT
+%left   ADD SUB
+%left   MUL DIV
+%right  NOT
+%left   OPREN CPREN
 
 /* Grammar Section */
 %%
@@ -144,8 +145,8 @@ binop
 		;
 
 uop
-		: NOT exp { $$ = add_astnode(T_UOP, "not", $2, NULL); }
-		| SUB exp { $$ = add_astnode(T_UOP, "minus", $2, NULL); }
+		: NOT exp           { $$ = add_astnode(T_UOP, "not", $2, NULL); }
+		| SUB exp %prec NOT { $$ = add_astnode(T_UOP, "minus", $2, NULL); }
 		;
 
 lit
