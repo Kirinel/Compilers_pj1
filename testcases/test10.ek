@@ -1,0 +1,11 @@
+def void main() {
+# 2. comments are skipped correctly (ok)
+# tag1
+# interupt1
+
+# 1. whitespace is skipped correctly in between tokens (ok1)
+  int $ a
+        = 1;
+# 1. whitespace is not skipped in string literals (ok2)
+  print "test\n1";
+}

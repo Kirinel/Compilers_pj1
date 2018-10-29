@@ -1,0 +1,17 @@
+extern int getarg(int);
+extern float getargf(int);
+
+def int foo(int $x, int $y) {
+	return ($x + $y);
+}
+
+#These
+def int run() {
+	#are
+	int $a = 666;
+	ref int $b = $a;
+	noalias ref int $c = $b;
+	int $d = foo($a, $b);
+	print $d;
+}
+#comments

@@ -1,0 +1,8 @@
+# 8. while statement, block statements, assignments, expressions that are variable names
+def void things (ref int $n) {
+  while (!($n > 100)) {
+    $n = $n * $n - 2;
+    $n = $a;
+    $a = $b;
+  }
+}

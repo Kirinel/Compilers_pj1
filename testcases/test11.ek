@@ -1,0 +1,5 @@
+# 4. correct parsing of ref types (including noalias ref types)
+def noalias ref int main ()
+{
+  ref int $i = 1;
+}

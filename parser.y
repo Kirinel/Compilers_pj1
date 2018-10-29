@@ -190,5 +190,5 @@ vdecl
 
 /* Error handling - this is the default function reccomended by Bison docs */
 void yyerror (struct astnode **rootnode, char const *s){
-	fprintf (stderr, "%s\n", s);
+	fprintf(stderr, "Error: %s\nPlease check the input\n", s);
 }
