@@ -1,0 +1,10 @@
+# 6. function calls, return statements, and expression statements
+def int run () {
+
+    $n = $n + 1;
+
+    inc($val);
+    things($val);
+
+    return 0;
+}

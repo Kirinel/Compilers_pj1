@@ -1,22 +1,19 @@
 CC=	clang
-#CFLAGS=	-fsanitize=fuzzer,address
-CFLAGS=	-g -std=gnu99 -o
-
-#.PHONY: all clean
+CFLAGS=	-g -O1 -o
 
 target:
 	bison parser.y
 	flex scanner.l
 	$(CC) $(CFLAGS) ./bin/ekcc main.c flex.c bison.c ast.c
 
+help:
+	./bin/ekcc -h
+
 test1:
-	./bin/ekcc -o ./test/test1.yaml ./test/test1.ek
+	./bin/ekcc -emit-ast -o ./testcases/test10.yaml ./testcases/test10.ek
 
 test2:
-	./bin/ekcc -o ./test/test2.yaml ./test/test2.ek 
-
-debug:
-	./bin/ekcc debug.ek > debug.yaml
+	./bin/ekcc -emit-ast -o ./testcases/test16.yaml ./testcases/test16.ek
 
 clean:
-	rm -f flex.c flex.h bison.c bison.h ./bin/ekcc ./test/test1.yaml ./test/test2.yaml debug.yaml
+	rm -f flex.c flex.h bison.c bison.h ./bin/ekcc ./testcases/*.yaml ./testcases/*.ast

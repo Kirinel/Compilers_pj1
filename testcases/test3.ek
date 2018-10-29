@@ -1,0 +1,6 @@
+#These
+def int run() {
+	#are;
+	int $a = 666;
+}
+#comments

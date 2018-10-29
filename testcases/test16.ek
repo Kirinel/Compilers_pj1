@@ -1,0 +1,7 @@
+# 10. Unary and binary operations
+def int run () {
+  int $b = 1+1*2;
+  int $c = -3*-6;
+  int $d = !$b || $c;
+  return 0;
+}
