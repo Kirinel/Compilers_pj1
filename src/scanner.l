@@ -1,5 +1,5 @@
 /* Flex directives */
-%option outfile="flex.c" header-file="flex.h"
+%option outfile="./temp/flex.c" header-file="./temp/flex.h"
 %option noyywrap nounput noinput
 
 /* This code is copied verbatim to the .c file generated - includes token defs from bison */
