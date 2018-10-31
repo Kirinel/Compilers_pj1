@@ -1,10 +1,10 @@
-%output  "bison.c"
-%defines "bison.h"
+%output  "./temp/bison.c"
+%defines "./temp/bison.h"
 %parse-param {struct astnode **rootnode}
 
 %code{
-#include "flex.h"
-#include "ast.h"
+#include "../temp/flex.h"
+#include "../src/ast.h"
 void yyerror (struct astnode **rootnode, char const *s);
 }
 

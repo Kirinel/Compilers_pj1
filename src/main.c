@@ -2,53 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "bison.h"
-#include "flex.h"
-#include "ast.h"
+#include "../src/tools.h"
 
-void emit_ast(char *in, char *out) {
-
-	yyin = fopen(in, "r");
-
-	FILE *outfile = fopen(out, "w");
-
-	fseek(yyin, 0L, SEEK_END);
-	int sz = ftell(yyin);
-	if (sz < 1) {
-		fprintf(stderr, "Error: Input file cannot be empty!\n");
-		return;
-	}
-	fseek(yyin, 0L, SEEK_SET);
-
-	if (yyin == NULL) {
-		puts("Error: No input files given");
-		exit(-1);
-	}
-	node *rootnode;
-
-	/* parse the given source file */
-	int err = yyparse(&rootnode);
-	if (err != 0)	{
-		fprintf(stderr, "Error: Wrong Syntax!\n");
-		exit(-1);
-	}
-
-
-	/* print out the AST */
-	fprintf(outfile, "---\n");
-	print_ast(rootnode, 0, outfile);
-	fprintf(outfile, "...\n");
-
-	/* House Keeping */
-	free_node(rootnode);
-
-	//fclose(yyin);
-	fclose(outfile);
-
-	printf("Success: The AST has been written to the given filename.\n");
-
-	return;
-}
 
 int main(int argc, char *argv[]) {
 	//dependencies of optget
@@ -128,10 +83,19 @@ int main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
+	//Generate the tree on the stack
+	node *root;
+	parse_tree(inf, &root);
+
+	process_tree(root);
+
 	if (astflag)
-		emit_ast(inf, outf);
+		emit_ast(inf, outf, root);
 	else
 		printf("No command specified!\nExiting the Program...\n");
+
+	/* House Keeping */
+	free_node(root);
 
 	// Exit
 	return 0;

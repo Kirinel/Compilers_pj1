@@ -3,6 +3,15 @@
 #include <stdio.h>
 
 typedef struct astnode node;
+enum exptype {
+  UNASSIGN = 0,
+  BOOL,
+  INT,
+  CINT,
+  FLOAT,
+  SFLOAT,
+  VOID
+};
 
 enum {
   // Major nodes, subnodes (possible names)
@@ -38,6 +47,7 @@ struct astnode {
   char name[32];
   char *str;
   double val;
+  enum exptype exptype; //hidden filed
   struct astnode *left;
   struct astnode *right;
   struct astnode *type;

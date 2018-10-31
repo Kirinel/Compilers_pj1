@@ -1,0 +1,9 @@
+extern int getarg(int);
+extern float getargf(int);
+
+def void inc (ref int $n) {}
+def int fib (int $n) {}
+def void inc (ref int $n) {}
+def int fib (int $n) {}
+#def cint run (int $a) {}
+#def int run () {}
