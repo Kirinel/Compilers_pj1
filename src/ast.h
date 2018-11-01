@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef struct astnode node;
 enum exptype {
@@ -47,6 +48,7 @@ struct astnode {
   char name[32];
   char *str;
   double val;
+  bool ref_or_not;
   enum exptype exptype; //hidden filed
   struct astnode *left;
   struct astnode *right;
@@ -60,7 +62,7 @@ struct astnode {
   struct astnode *stmt2;
 };
 
-node *add_node(int tag, char *name, char *str, double val, node *left, node *right, node *type, node *globid, node *tdecls, node *vdecls, node *blk, node *expr, node *stmt1, node *stmt2);
+node *add_node(int tag, char *name, char *str, double val, node *left, node *right, node *type, node *globid, node *tdecls, node *vdecls, node *blk, node *expr, node *stmt1, node *stmt2, bool ref_or_not);
 node *add_astnode(int, char *, node *, node *);
 node *add_func(node *, node *, node *, node *);
 node *add_extern(node *, node *, node *);
@@ -71,6 +73,7 @@ node *add_slit(char *);
 node *add_var(char *);
 node *add_globid(char *);
 node *add_type(char *);
+node *add_ref_type(char *, node *);
 void free_node(node *);
 
 void print_ast(node *, int, FILE *);

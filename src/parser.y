@@ -166,8 +166,8 @@ globid
 		;
 
 type
-		: NOALIAS REF type  { $$ = add_astnode(T_TYPE, "noalias ref", $3, NULL); }
-		| REF type          { $$ = add_astnode(T_TYPE, "ref", $2, NULL); }
+		: NOALIAS REF type  { $$ = add_ref_type("noalias ref", $3); }
+		| REF type          { $$ = add_ref_type("ref", $2); }
 		| TYPES             { $$ = add_type($1); }
 		;
 

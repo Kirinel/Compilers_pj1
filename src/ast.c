@@ -5,7 +5,7 @@
 #include <assert.h>
 
 /* function to generate nodes */
-node *add_node(int tag, char *name, char *str, double val, node *left, node *right, node *type, node *globid, node *tdecls, node *vdecls, node *blk, node *expr, node *stmt1, node *stmt2)
+node *add_node(int tag, char *name, char *str, double val, node *left, node *right, node *type, node *globid, node *tdecls, node *vdecls, node *blk, node *expr, node *stmt1, node *stmt2, bool ref_or_not)
 {
 	node *n = calloc(1, sizeof(node));
 	n->tag = tag;
@@ -35,6 +35,7 @@ node *add_node(int tag, char *name, char *str, double val, node *left, node *rig
 		case T_GLOB:
 		case T_TYPE:
 			n->str = strdup(str);
+			n->ref_or_not = ref_or_not;
 			n->left = left;
 			break;
 		// a normal node
@@ -55,52 +56,57 @@ node *add_node(int tag, char *name, char *str, double val, node *left, node *rig
 /* create a new AST node */
 node *add_astnode(int tag, char *name, node *left, node *right)
 {
-	return add_node(tag, name, "", 0, left, right, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	return add_node(tag, name, "", 0, left, right, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 }
 /* create a function node */
 node *add_func(node *type, node *globid, node *vdecls, node *blk)
 {
-	return add_node(T_FUNC, "func", "", 0, NULL, NULL, type, globid, NULL, vdecls, blk, NULL, NULL, NULL);
+	return add_node(T_FUNC, "func", "", 0, NULL, NULL, type, globid, NULL, vdecls, blk, NULL, NULL, NULL, false);
 }
 /* create an extern node */
 node *add_extern(node *type, node *globid, node *tdecls)
 {
-	return add_node(T_EXTERN, "extern", "", 0, NULL, NULL, type, globid, tdecls, NULL, NULL, NULL, NULL, NULL);
+	return add_node(T_EXTERN, "extern", "", 0, NULL, NULL, type, globid, tdecls, NULL, NULL, NULL, NULL, NULL, false);
 }
 /* create a open/closed statement node */
 node *add_ocstmt(int tag, char *name, node *expr, node *stmt1, node *stmt2)
 {
-		return add_node(tag, name, "", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, expr, stmt1, stmt2);
+		return add_node(tag, name, "", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, expr, stmt1, stmt2, false);
 }
 /* create a lit or flit node */
 node *add_lit(double val)
 {
 	//fprintf(stderr, "%f\n", val);
 	if (val == (int)val)
-		return add_node(T_LIT, "lit", "", val, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		return add_node(T_LIT, "lit", "", val, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 	else
-		return add_node(T_LIT, "flit", "", val, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		return add_node(T_LIT, "flit", "", val, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 }
 
 /* create a slit node */
 node *add_slit(char *str)
 {
-	return add_node(T_SLIT, "slit", str, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	return add_node(T_SLIT, "slit", str, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 }
 /* create a variable identifier node */
 node *add_var(char *varname)
 {
-	return add_node(T_VAR, "varval", varname, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	return add_node(T_VAR, "varval", varname, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 }
 /* create a function identifier node */
 node *add_globid(char *globname)
 {
-	return add_node(T_GLOB, "globid", globname, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	return add_node(T_GLOB, "globid", globname, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 }
 /* create a type node */
 node *add_type(char *typename)
 {
-	return add_node(T_TYPE, "type", typename, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	return add_node(T_TYPE, "type", typename, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+}
+/* create a ref type */
+node *add_ref_type(char *reftype, node *child)
+{
+	return add_node(T_TYPE, reftype, "", 0, child, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
 }
 
 //add RETURN node
