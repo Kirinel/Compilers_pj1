@@ -18,5 +18,8 @@ test2:
 test3:
 	./bin/ekcc -emit-ast -o ./testcases/test18.yaml ./testcases/test18.ek
 
+test4:
+	./bin/ekcc -emit-ast -o ./testcases/test19.yaml ./testcases/test19.ek
+
 clean:
 	rm -f ./temp/flex.c ./temp/flex.h ./temp/bison.c ./temp/bison.h ./bin/ekcc ./testcases/*.yaml ./testcases/*.ast

@@ -57,4 +57,11 @@ for example
 1. -emit-ast will now generate the sequential AST.
 2. Associativity and Precendence (p.4).
 
-
+---
+## Update Log
+#### New Updates on the Program (10.31)
+1. A New function find_local_var is applied to find a local variable in the variable table.
+2. All functions must be declared before use.
+3. `vdecl` in function declarations and blocks cannot have a void type.
+4. A ref type in `vdecl` may not contain a `ref` or `void` type.
+5. All programs define the "run" function with the right type.

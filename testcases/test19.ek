@@ -1,0 +1,11 @@
+#def void fibonacci(ref int $n) {
+#  inc($n);
+#}
+
+def void inc(int $n) {
+  return $n + 1;
+}
+
+def int run() {
+    int $pdd = 1;
+}
