@@ -307,13 +307,31 @@ void process_tree(node *root)
 
 int check_vdecl(node *n) {
 	assert(n->tag == T_VDECL);
-	// code here
+	if(strcmp(n->left->name, "type") != 0) {
+		//if the left child is a ref, given that no "ref ref" occurs,
+		// the left child must be type
+		node * p = n->left;
+		if(strcmp(p->left->str,"void") == 0) {
+			fprintf(stderr, "vdecl has a void type\n");
+			return -1;
+		}
+	}
+	else {
+		if(strcmp(n->left->str, "void") != 0) {
+			fprintf(stderr, "vdecl has a void type\n");
+			return -1;
+		}
+	}
 	return 0;
 }
 
 int check_ref_type(node *n) {
 	assert(n->tag == T_TYPE);
-	// code here
+	assert(strcmp(n->name, "ref") == 0 || strcmp(n->name, "noalias ref") == 0)
+	if(strcmp(n->left->str, "void") == 0 || strcmp(n->left->name, "ref") == 0 || strcmp(n->name, "noalias ref") == 0) {
+		fprintf(stderr, "ref or void after ref\n");
+		return 1;
+	}
 	return 0;
 }
 
@@ -322,4 +340,100 @@ int check_ref_var_init(node *n, VAR_table *t) {
 	assert(n->left->left->name == "ref" || n->left->left->name == "noalias ref");
 	// check right expr is a variable
 	return 0;
+}
+
+enum exptype type_convert(char *type) {
+	if (strcmp(type, "lit") == 0) {
+		return INT;
+	}
+	else if(strcmp(type, "flit") == 0) {
+		return FLOAT;
+	}
+	else if(strcmp(type, "cint") == 0) {
+		return CINT;
+	}
+	else if(strcmp(type, "sfloat") == 0) {
+		return SFLOAT;
+	}
+	else if(strcmp(type, "void") == 0) {
+		return VOID;
+	}
+}
+
+enum exptype check_exp_type(node *n, VAR_table *tv, FUNC_table *tf) {
+	assert(n->tag == T_EXP || n->tag == T_BINOP || n->tag == T_UOP);
+	switch (n->tag) {
+		case T_EXP/* value */:
+			if(strcmp(n->name, "exp") == 0) {
+				return check_exp_type(n->left, tv, tf);
+			}
+			else if(strcmp(n->name, "binop") == 0) {
+				return check_exp_type(n->left, tv, tf);
+			}
+			else if(strcmp(n->name, "uop") == 0) {
+				return check_exp_type(n->left, tv, tf);
+			}
+			else if(strcmp(n->name, "lit") == 0) {
+				return INT;
+			}
+			else if(strcmp(n->name, "var") == 0) {
+				VAR_entry *temp_var;
+				find_local_var(tv, n->str, &temp_var);
+				return type_convert(temp_var->type);
+			}
+			else if(strcmp(n->name, "globid") == 0) {
+				FUNC_entry *temp_func;
+				find_func(tf, n->str, &temp_func);
+				return type_convert(temp_func->ret_type);
+			}
+			break;
+		case T_BINOP:
+			if(strcmp(n->name, "add") == 0 || strcmp(n->name, "mul") == 0 || strcmp(n->name, "sub") == 0 || strcmp(n->name, "div") == 0) {
+				if(check_exp_type(n->left, tv, tf) == FLOAT) {
+					n->right->exptype = FLOAT;
+					return FLOAT;
+				}
+				else if(check_exp_type(n->right, tv, tf) == FLOAT) {
+					n->left->exptype = FLOAT;
+					return FLOAT;
+				}
+				if(check_exp_type(n->left, tv, tf) == SFLOAT) {
+					n->right->exptype = SFLOAT;
+					return SFLOAT;
+				}
+				else if(check_exp_type(n->right, tv, tf) == SFLOAT) {
+					n->left->exptype = SFLOAT;
+					return SFLOAT;
+				}
+				if(check_exp_type(n->left, tv, tf) == INT) {
+					n->right->exptype = INT;
+					return INT;
+				}
+				else if(check_exp_type(n->right, tv, tf) == INT) {
+					n->left->exptype = INT;
+					return INT;
+				}
+				if(check_exp_type(n->left, tv, tf) == CINT) {
+					n->right->exptype = CINT;
+					return CINT;
+				}
+				else if(check_exp_type(n->right, tv, tf) == CINT) {
+					n->left->exptype = CINT;
+					return CINT;
+				}
+			}
+			else if(strcmp(n->name, "assign") == 0) {
+				return check_exp_type(n->right, tv, tf);
+			}
+			else {
+				return INT;
+			}
+			break;
+		case T_UOP:
+			if(strcmp(n->name, "minus") == 0) {
+				return check_exp_type(n->left, tv, tf);
+			}
+			else return INT;
+	}
+
 }

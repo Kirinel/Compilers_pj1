@@ -5,8 +5,7 @@
 
 typedef struct astnode node;
 enum exptype {
-  UNASSIGN = 0,
-  BOOL,
+  UNDEF = 0,
   INT,
   CINT,
   FLOAT,
