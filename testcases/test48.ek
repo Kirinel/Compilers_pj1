@@ -1,0 +1,8 @@
+#test48: okay
+
+extern int inc(ref int);
+
+def int run() {
+  int $a = 1;
+  inc($a);
+}

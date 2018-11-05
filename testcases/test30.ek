@@ -1,0 +1,9 @@
+#test30: vdecl may not have void type
+def int inc(int $n) {
+  void $a = $n;
+  return $a + 1;
+}
+
+def int run() {
+  void $a = 1;
+}

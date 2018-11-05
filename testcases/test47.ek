@@ -1,0 +1,7 @@
+#test47: funcall, pass value to ref int arguments
+
+extern int inc(ref int);
+
+def int run() {
+  inc($a, 1);
+}

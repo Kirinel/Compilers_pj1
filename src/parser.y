@@ -18,7 +18,7 @@ void yyerror (struct astnode **rootnode, char const *s);
 
 
 /* Terminal Tokens and Type Declaration */
-%token <num> NUMBER
+%token <str> NUMBER
 %token <str> ID STRINGS TYPES
 %token ADD SUB MUL DIV
 %token OPREN CPREN CBRACK OBRACK

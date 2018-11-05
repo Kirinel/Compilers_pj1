@@ -1,0 +1,7 @@
+#test28: calling defined extern functions, okay
+
+extern int inc(int);
+
+def int run() {
+  inc($n);
+}

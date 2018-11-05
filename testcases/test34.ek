@@ -1,0 +1,9 @@
+#test34: The type cannot be of type ref void
+
+def ref void inc(int $n) {
+  return;
+}
+
+def int run() {
+
+}

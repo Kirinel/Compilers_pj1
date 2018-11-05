@@ -47,7 +47,7 @@ COMMENT   "#".*
 {NOALIAS}   {yylval.str = strdup(yytext); return NOALIAS;}
 {REF}       {yylval.str = strdup(yytext); return REF;}
 {TYPE}      {yylval.str = strdup(yytext); return TYPES;}
-{LIT}       {yylval.num = atof(yytext);   return NUMBER;}
+{LIT}       {yylval.str = strdup(yytext); return NUMBER;}
 {SLIT}      {yylval.str = strdup(yytext); return STRINGS;}
 {ID}        {yylval.str = strdup(yytext); return ID;}
 [ \t\n]     { /* ignore whitespaces */ }

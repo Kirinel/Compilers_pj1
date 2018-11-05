@@ -74,13 +74,20 @@ node *add_ocstmt(int tag, char *name, node *expr, node *stmt1, node *stmt2)
 		return add_node(tag, name, "", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, expr, stmt1, stmt2, false);
 }
 /* create a lit or flit node */
-node *add_lit(double val)
+node *add_lit(char *valstr)
 {
+	int flit = 0, len = strlen(valstr);
+	for (int i=0; i<=len; ++i) {
+		if (valstr[i] == '.') {
+			flit = 1;
+			break;
+		}
+	}
 	//fprintf(stderr, "%f\n", val);
-	if (val == (int)val)
-		return add_node(T_LIT, "lit", "", val, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+	if (flit)
+		return add_node(T_LIT, "flit", "", atof(valstr), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 	else
-		return add_node(T_LIT, "flit", "", val, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+		return add_node(T_LIT, "lit", "", atoi(valstr), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 }
 
 /* create a slit node */
@@ -157,6 +164,28 @@ void print_varname(node *n, int dent, FILE *out)
 {
 	assert(n->tag == T_VAR);
 	put_str("var: ", n->str, dent, out);
+	return;
+}
+
+// printout the expression type
+void print_exp_type(node *n, int dent, FILE *out) {
+	put_indent(dent, out);
+	//printf("%d\n", n->exptype);
+	if (n->exptype == INT) {
+		fprintf(out, "expr_type: int\n");
+	} else if (n->exptype == CINT) {
+		fprintf(out, "expr_type: cint\n");
+	} else if (n->exptype == FLOAT) {
+		fprintf(out, "expr_type: float\n");
+	} else if (n->exptype == SFLOAT) {
+		fprintf(out, "expr_type: sfloat\n");
+	} else if (n->exptype == VOID){
+		fprintf(out, "expr_type: void\n");
+	} else {
+		//printf("%s: %d %d\n", n->name, n->exptype, INT);
+		fprintf(out, "expr_type: undefined\n");
+	}
+
 	return;
 }
 
@@ -435,6 +464,7 @@ void print_ast(node *n, int dent, FILE *out)
 			break;
 
 		case T_EXP: //name: exp
+			//print_exp_type(n, dent, out);
 			if(strcmp(n->name, "exp") == 0) {
 				//put_str("", "exp:", dent);
 				if (n->left != NULL) print_ast(n->left, dent, out);
@@ -454,6 +484,7 @@ void print_ast(node *n, int dent, FILE *out)
 			else if(strcmp(n->name, "globid") == 0) {
 				//put_str("", "exp:", dent);
 				put_str("","name: funccall", dent+1, out);
+				print_exp_type(n, dent+1, out);
 				if (n->left != NULL) print_ast(n->left, dent+1, out);
 				put_str("", "params:", dent+1, out);
 				if (n->right != NULL) print_ast(n->right, dent+2, out);
@@ -467,8 +498,14 @@ void print_ast(node *n, int dent, FILE *out)
 			break;
 
 		case T_BINOP: //name: binop
+			//print_exp_type(n, dent, out);
 			if(strcmp(n->name, "assign") == 0) {
 				put_str("name: ", n->name, dent, out);
+
+				//printf("binop: %d\n", n->exptype);
+
+				print_exp_type(n, dent, out);
+				//print_exp_type(n, dent, out);
 				put_str("var: ", n->left->str, dent, out);
 				put_str("", "exp:", dent, out);
 				//if (n->left != NULL) print_ast(n->left, dent);
@@ -477,6 +514,11 @@ void print_ast(node *n, int dent, FILE *out)
 			}
 			else {
 				put_str("", "name: binop", dent, out);
+				//printout expression type
+				// printf("binop: %d\n", n->exptype);
+
+				print_exp_type(n, dent, out);
+				//printout expression type
 				put_str("op: ", n->name, dent, out);
 				// printf("BINOP, n->name: %s\n",n->name );
 				put_str("", "lhs: ", dent, out);
@@ -501,7 +543,11 @@ void print_ast(node *n, int dent, FILE *out)
 			break;
 
 		case T_UOP: //name: uop
+			//print_exp_type(n, dent, out);
 			put_str("", "name: uop", dent, out); //newly inserted
+			//printout expression type
+			print_exp_type(n, dent, out);
+			//printout expression type
 			put_str("op: ", n->name, dent, out);
 			put_str("", "exp:", dent, out);
 			if (n->left != NULL) print_ast(n->left, dent+1, out);
@@ -515,7 +561,9 @@ void print_ast(node *n, int dent, FILE *out)
 			break;
 
 		case T_LIT: //name: lit
+			//print_exp_type(n, dent, out);
 			put_str("name: ", n->name, dent, out);
+			print_exp_type(n, dent, out);
 			put_indent(dent, out);
 			if (strcmp("lit", n->name) == 0) {
 				fprintf(out, "value: %.0lf\n", n->val);
@@ -527,7 +575,9 @@ void print_ast(node *n, int dent, FILE *out)
 			break;
 
 		case T_VAR: //name: var
+			//print_exp_type(n, dent, out);
 			put_str("", "name: varval", dent, out);
+			print_exp_type(n, dent, out);
 			put_str("var: ", n->str, dent, out);
 			//if (n->left != NULL) print_ast(n->left, dent+1);
 			//if (n->right != NULL) print_ast(n->right, dent+1);
@@ -535,12 +585,14 @@ void print_ast(node *n, int dent, FILE *out)
 
 		case T_ID: //name: identifier
 			put_str("name: ", n->str, dent, out);
+			//print_exp_type(n, dent, out);
 			if (n->left != NULL) print_ast(n->left, dent+1, out);
 			if (n->right != NULL) print_ast(n->right, dent+1, out);
 			break;
 
 		case T_GLOB: //name: globid
 			put_str("globid: ", n->str, dent, out);
+			//print_exp_type(n, dent, out);
 			if (n->left != NULL) print_ast(n->left, dent+1, out);
 			if (n->right != NULL) print_ast(n->right, dent+1, out);
 			break;

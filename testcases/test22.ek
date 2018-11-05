@@ -1,0 +1,2 @@
+#test22: run function must return the correct type
+def float run() {}

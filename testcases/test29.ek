@@ -1,0 +1,4 @@
+#test29: vdecl may not have void type
+def int run() {
+  void $a = 1;
+}

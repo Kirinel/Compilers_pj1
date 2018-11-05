@@ -1,0 +1,7 @@
+#test39: The type cannot be ref ref
+
+extern int inc(ref int, ref ref void);
+
+def int run() {
+
+}

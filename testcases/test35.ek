@@ -1,0 +1,7 @@
+#test35: The return type cannot be a ref void type
+
+extern ref void inc(int);
+
+def int run() {
+
+}

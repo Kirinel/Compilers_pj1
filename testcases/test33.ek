@@ -1,0 +1,9 @@
+#test33: The return type cannot be a ref type
+
+def ref int inc(int $n) {
+  return;
+}
+
+def int run() {
+
+}

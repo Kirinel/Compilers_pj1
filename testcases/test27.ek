@@ -1,0 +1,10 @@
+#test27: calling defined functions, okay
+
+def int inc(int $n) {
+  return $n + 1;
+}
+
+def int run() {
+  int $n = 1;
+  inc($n);
+}
