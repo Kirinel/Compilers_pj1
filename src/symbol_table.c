@@ -171,8 +171,9 @@ int add_table_func(FUNC_table *t, char *globid, char *ret_type, node *n)
     //check duplicate globids
     //printf("%s %s\n", curr->globid, globid);
     if (!strcmp(curr->globid, globid)) {
-      fprintf(stderr, "error: function (%s) has already been declared.\n", globid);
-      return -1;
+      fprintf(stderr, "error: function (%s) has already been declared (code: 007).\n", globid);
+      exit(7);
+      //return -1;
     }
 
     curr = curr->next;
@@ -181,8 +182,9 @@ int add_table_func(FUNC_table *t, char *globid, char *ret_type, node *n)
 
   //check duplicate globids
   if (!strcmp(curr->globid, globid)) {
-    fprintf(stderr, "error: function (%s) has already been declared.\n", globid);
-    return -1;
+    fprintf(stderr, "error: function (%s) has already been declared (code: 007).\n", globid);
+    exit(7);
+    //return -1;
   }
   //find the last case and insert;
   curr->next = new_func_entry(globid, ret_type, hash_value, n, ++t->num_funcs);

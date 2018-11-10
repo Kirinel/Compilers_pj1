@@ -1,0 +1,2 @@
+#test23: run function must take no arguments
+def int run(int $n) {}

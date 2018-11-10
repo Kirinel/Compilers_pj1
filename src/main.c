@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
 	if (astflag)
 		emit_ast(inf, outf, root);
 	else
-		printf("No command specified!\nExiting the Program...\n");
+		printf("Exiting the Program...\n");
 
 	/* House Keeping */
 	free_node(root);

@@ -1,0 +1,9 @@
+#test42: local variable not found
+
+def int inc(ref int $n) {
+  ref int $t = $b;
+}
+
+def int run() {
+
+}

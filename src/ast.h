@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 typedef struct astnode node;
+
 enum exptype {
   UNDEF = 0,
   INT,
@@ -66,7 +67,7 @@ node *add_astnode(int, char *, node *, node *);
 node *add_func(node *, node *, node *, node *);
 node *add_extern(node *, node *, node *);
 node *add_ocstmt(int, char *, node *, node *, node *);
-node *add_lit(double);
+node *add_lit(char *);
 node *add_flit(double);
 node *add_slit(char *);
 node *add_var(char *);
@@ -74,6 +75,7 @@ node *add_globid(char *);
 node *add_type(char *);
 node *add_ref_type(char *, node *);
 void free_node(node *);
+void print_exp_type(node *, int, FILE *f);
 
 void print_ast(node *, int, FILE *);
 
