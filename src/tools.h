@@ -1,76 +1,91 @@
-#ifndef TOOLS_H
-#define TOOLS_H
-
 #include "ast.h"
 #include "symbol_table.h"
+#include "llvm.h"
 
+#define VDECL_NO_REF    (1)
+#define REF_NO_REF_VOID (2)
+#define FUNC_NO_DECL    (3)
+#define FUNC_RET_REF    (4)
+#define REF_INIT_VAR    (5)
+#define NO_FUNC_RUN     (6)
 
+/* emit_ast: write out the ast to file
+ */
+void emit_ast(char *in, char *out, Node *rootnode);
 
+/* fill_exp_type: Fill all the expressions in the AST with types (no ref type)
+ *  This is a recursive function.
+ *		args:
+ *			n: One node of the AST
+ *			ft: The pointer to the function table
+ *			vt: The pointer to the variable table
+ *		returns:
+ *			the (value) type of the node (as enum exp_type)
+ */
+enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt);
 
-/* Pre-scan the tree and prints potential errors */
+/* scan_AST: a recursive function to reach from *prog* to *extern* and *func*,
+ * 	invokes the following helper functions.
+ * 	returns a nonzero value when encountered an error.
+ *
+ *	args: Node tree
+ *	returns: void
+ */
+void scan_AST(FUNC_table *t, Node *n);
 
-// load_all: a recursive function to reach from *prog* to *extern* and *func*,
-//  invokes the following helper functions.
-int load_all(FUNC_table *, node *);
+/* add_func: add a function from the source file to the symbol table
+ *	args:
+ *		t: A pointer to the function table
+ *		n: An AST node
+ *	returns:
+ *		error code:
+ *			FUNC_RET_REF: The return type of the function cannot be ref type
+ */
+void scan_func(FUNC_table *t, Node *n);
 
-// load_func: add a *func* node into the hash table. Returns a nonzero value when encountered an error.
-int load_func(FUNC_table *, node *);
+/* verify_type: verify the given type node is not ref ref or ref void
+ *	args:
+ *		n: Node <type>
+ *	Use recursion to check the case of ref ref, and ref void
+ */
+void verify_type(Node *n);
 
+/* verify_vdecl: verify the given node is <vdecl> is valid
+ *	args: a node <vdecl>
+ */
+void verify_vdecl(Node *n);
 
+/* verify_vdeclstmt: verify the given node <vdeclstmt> is valid*/
+void verify_vdeclstmt(Node *n, VAR_table *t);
 
-// load_args: load the arguments as local variables into the table
-int load_args(VAR_table *, node *);
-// load_targs: check the type declarations of a type argument
-int load_targs(node *);
-// load_func_blk: a recursive function to go through the *blk* of the function.
-//	Returns a nonzero value when encountered an error.
-//	the function will be executed one time for each function
-int load_func_blk(FUNC_table *, VAR_table *, node *);
-// add_local_var: A function to add the declared local variable into the variable table.
-int add_local_var(VAR_table *, node *);
-// get_type: A function to get the type of the *vdecl* node, as a pointer parameter.
-int get_declared_type(node *, char **, char *);
+/* scan_tdecls: scan the type declaration of external functions
+ * 	args:
+ *		node <tdecls> or <type>
+ *	Use recursion to check all the type.
+ */
+void scan_tdecls(Node *n);
 
-/* Functions still in development */
-/* Part I APIs */
-// check_vdecl: Check the node vdecl does not have a declared type void
-int check_vdecl(node *);
-/* Part II APIs - dev */
-int check_ref_type(node *);
-/* Part III APIs */
-int check_func_call(FUNC_table *t, char *globid);
-/* Part IV APIs */
-// check_func_ret_type: Check the function return type.
-//  The function return type cannot be [ref] type.
-int check_func_ret_type(char *, node *);
-//int check_func_ret_type(FUNC_table *t, char *globid);
-/* Part V APIs */
-// Check the arguments when making a function call
-//	especially cannot assign values to a ref type
-int check_call_args(node *, node *);
-/* Others */
-int declare_local_vars(FUNC_table *, char *, char *, node *);
+/* scan_args: scan the arguments into the local variable table
+ *	args:
+ *		a node vdecls
+ */
+void scan_args(VAR_table *t, Node *n);
 
-int check_valid_vars(FUNC_table *t, char *);
+/* scan_fblk: a recursive function to go through the *blk* of the function.
+ * 	args:
+ *		ft: function table pointer
+ *		vt: variable table pointer
+ *		n: Node n
+ * purpose: load local variables into the table
+ *					and filter invalid function calls
+ */
+void scan_fblk(FUNC_table *ft, VAR_table *vt, Node *n);
 
-/* Functions that have been implemented */
-/* Part VI APIs */
-// check_run: The function to find if the run function has been correctly defined.
-//  raise errors and exit the program within this function.
-int check_run(FUNC_table *);
-
-enum exptype type_convert(char *);
-// Assign the type of the expression
-enum exptype check_exp_type(node *, VAR_table *, FUNC_table *);
-
-/* Directly calls from main function */
+/* check_run: The function to find if the run function has been correctly defined.
+  	raise errors and exit the program within this function.
+ */
+void check_run(FUNC_table *t);
 
 // process_tree: The entry point of this file.
 //	will do the 6 checks needed.
-void process_tree(node *);
-
-void parse_tree(char *, node **);
-void emit_ast(char *, char *, node *);
-
-
-#endif
+void process_tree(Node *root);

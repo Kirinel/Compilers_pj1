@@ -1,9 +1,0 @@
-#test41: ref var initializer must be variable
-
-def int inc(ref int $n) {
-  ref int $t = 9.0;
-}
-
-def int run() {
-
-}

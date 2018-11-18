@@ -1,4 +1,0 @@
-#test25: calling undefined functions, err3
-def int run() {
-  inc($n);
-}

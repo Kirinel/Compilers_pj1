@@ -1,9 +1,0 @@
-#test43: okay
-
-def int inc(ref int $n) {
-  ref int $t = $n;
-}
-
-def int run() {
-
-}

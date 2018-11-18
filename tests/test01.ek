@@ -1,0 +1,14 @@
+def int inc(int $n) {
+  return 0;
+}
+
+def int run() {
+  int $a = 3 + 4;
+  ref int $b = $a;
+  $b = $b + 1;
+  int $c = 5;
+  $a = $a + $c;
+  print "Welcome to walkure world!";
+  print $b;
+  return 7 + 8;
+}

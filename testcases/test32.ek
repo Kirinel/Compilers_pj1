@@ -1,9 +1,0 @@
-#test32: correct
-def int inc(int $n) {
-  int $t = 1;
-  return $t;
-}
-
-def int run() {
-  int $x = inc(1);
-}

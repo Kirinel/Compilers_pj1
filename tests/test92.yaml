@@ -1,0 +1,391 @@
+---
+name: prog
+funcs:
+  name: funcs
+  funcs:
+    -
+      name: func
+      ret_type: sfloat
+      globid: test1
+      blk:
+        name: blk
+        contents:
+          name: stmts
+          stmts:
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: int
+                var: x
+              exp:
+                name: lit
+                value: 0
+                expr_type: int
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: int
+                var: xy
+              exp:
+                name: lit
+                value: 1
+                expr_type: int
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: int
+                var: xyz
+              exp:
+                name: lit
+                value: 2
+                expr_type: int
+            -
+              name: while
+              cond:
+                name: binop
+                op: gt
+                expr_type: int
+                lhs:
+                  name: varval
+                  var: xyz
+                  expr_type: int
+                rhs:
+                  name: lit
+                  value: 8
+                  expr_type: int
+              stmt:
+                name: blk
+                contents:
+                  name: stmts
+                  stmts:
+                    -
+                      name: expstmt
+                      exp:
+                        name: assign
+                        expr_type: float
+                        var: x
+                        exp:
+                          name: binop
+                          op: sub
+                          expr_type: float
+                          lhs:
+                            name: binop
+                            op: add
+                            expr_type: float
+                            lhs:
+                              name: varval
+                              var: a
+                              expr_type: float
+                            rhs:
+                              name: varval
+                              var: b
+                              expr_type: sfloat
+                          rhs:
+                            name: binop
+                            op: mul
+                            expr_type: float
+                            lhs:
+                              name: binop
+                              op: div
+                              expr_type: float
+                              lhs:
+                                name: varval
+                                var: c
+                                expr_type: float
+                              rhs:
+                                name: varval
+                                var: a
+                                expr_type: float
+                            rhs:
+                              name: varval
+                              var: b
+                              expr_type: sfloat
+                    -
+                      name: expstmt
+                      exp:
+                        name: assign
+                        expr_type: int
+                        var: xy
+                        exp:
+                          name: binop
+                          op: eq
+                          expr_type: int
+                          lhs:
+                            name: varval
+                            var: a
+                            expr_type: float
+                          rhs:
+                            name: varval
+                            var: b
+                            expr_type: sfloat
+                    -
+                      name: if
+                      cond:
+                        name: binop
+                        op: or
+                        expr_type: int
+                        lhs:
+                          name: binop
+                          op: and
+                          expr_type: int
+                          lhs:
+                            name: binop
+                            op: gt
+                            expr_type: int
+                            lhs:
+                              name: varval
+                              var: xyz
+                              expr_type: int
+                            rhs:
+                              name: uop
+                              op: minus
+                              expr_type: int
+                              exp:
+                                name: varval
+                                var: xy
+                                expr_type: int
+                          rhs:
+                            name: binop
+                            op: lt
+                            expr_type: int
+                            lhs:
+                              name: varval
+                              var: a
+                              expr_type: float
+                            rhs:
+                              name: varval
+                              var: b
+                              expr_type: sfloat
+                        rhs:
+                          name: binop
+                          op: or
+                          expr_type: int
+                          lhs:
+                            name: binop
+                            op: eq
+                            expr_type: int
+                            lhs:
+                              name: varval
+                              var: c
+                              expr_type: float
+                            rhs:
+                              name: varval
+                              var: a
+                              expr_type: float
+                          rhs:
+                            name: uop
+                            op: not
+                            expr_type: int
+                            exp:
+                              name: varval
+                              var: x
+                              expr_type: int
+                      stmt:
+                        name: blk
+                        contents:
+                          name: stmts
+                          stmts:
+                            -
+                              name: ret
+                              exp:
+                                name: varval
+                                var: a
+                                expr_type: float
+                      else_stmt:
+                        name: blk
+                        contents:
+                          name: stmts
+                          stmts:
+                            -
+                              name: expstmt
+                              exp:
+                                name: assign
+                                expr_type: float
+                                var: a
+                                exp:
+                                  name: flit
+                                  value: 8.5
+                                  expr_type: float
+                    -
+                      name: expstmt
+                      exp:
+                        name: assign
+                        expr_type: float
+                        var: b
+                        exp:
+                          name: flit
+                          value: 7.2
+                          expr_type: float
+            -
+              name: ret
+              exp:
+                name: varval
+                var: c
+                expr_type: float
+      vdecls:
+        name: vdecls
+        vars:
+          -
+            node: vdecl
+            type: noalias ref float
+            var: a
+          -
+            node: vdecl
+            type: noalias ref sfloat
+            var: b
+          -
+            node: vdecl
+            type: float
+            var: c
+    -
+      name: func
+      ret_type: int
+      globid: run
+      blk:
+        name: blk
+        contents:
+          name: stmts
+          stmts:
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: float
+                var: a
+              exp:
+                name: funccall
+                globid: getargf
+                expr_type: float
+                params:
+                  name: exps
+                  exps:
+                    -
+                      name: lit
+                      value: 0
+                      expr_type: int
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: float
+                var: b
+              exp:
+                name: funccall
+                globid: getargf
+                expr_type: float
+                params:
+                  name: exps
+                  exps:
+                    -
+                      name: lit
+                      value: 1
+                      expr_type: int
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: float
+                var: c
+              exp:
+                name: funccall
+                globid: getargf
+                expr_type: float
+                params:
+                  name: exps
+                  exps:
+                    -
+                      name: lit
+                      value: 2
+                      expr_type: int
+            -
+              name: printslit
+              string: "initial:"
+            -
+              name: print
+              exp:
+                name: varval
+                var: a
+                expr_type: float
+            -
+              name: print
+              exp:
+                name: varval
+                var: b
+                expr_type: float
+            -
+              name: print
+              exp:
+                name: varval
+                var: c
+                expr_type: float
+            -
+              name: expstmt
+              exp:
+                name: funccall
+                globid: test1
+                expr_type: sfloat
+                params:
+                  name: exps
+                  exps:
+                    -
+                      name: varval
+                      var: a
+                      expr_type: float
+                    -
+                      name: varval
+                      var: b
+                      expr_type: float
+                    -
+                      name: varval
+                      var: c
+                      expr_type: float
+            -
+              name: printslit
+              string: "final:"
+            -
+              name: print
+              exp:
+                name: varval
+                var: a
+                expr_type: float
+            -
+              name: print
+              exp:
+                name: varval
+                var: b
+                expr_type: float
+            -
+              name: print
+              exp:
+                name: varval
+                var: c
+                expr_type: float
+            -
+              name: ret
+              exp:
+                name: lit
+                value: 0
+                expr_type: int
+externs:
+  name: externs
+  externs:
+    -
+      name: extern
+      ret_type: int
+      globid: getarg
+      tdecls:
+        name: tdecls
+        types:
+          - int
+    -
+      name: extern
+      ret_type: float
+      globid: getargf
+      tdecls:
+        name: tdecls
+        types:
+          - int
+...

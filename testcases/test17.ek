@@ -1,9 +1,0 @@
-# 3. parsing of numeric literals
-def int main() {
-  $a = 7.2;
-  $b = 5.34;
-
-  print "whoseyourdaddy\n";
-
-  return 0;
-}
