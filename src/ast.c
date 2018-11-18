@@ -1,124 +1,497 @@
 #include "ast.h"
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
-/* function to generate nodes */
-node *add_node(int tag, char *name, char *str, double val, node *left, node *right, node *type, node *globid, node *tdecls, node *vdecls, node *blk, node *expr, node *stmt1, node *stmt2, bool ref_or_not)
+#define MAX_TYPE 32
+
+/* Add a prog node
+ *  externs:
+ *  funcs:
+ */
+Node *add_prog(Node *externs, Node *funcs)
 {
-	node *n = calloc(1, sizeof(node));
-	n->tag = tag;
-	strcpy(n->name, name);
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_PROG;
+  n->node_prog.externs = externs;
+  n->node_prog.funcs = funcs;
 
-	switch (tag) {
-		// special node extern
-		case T_EXTERN:
-			n->type = type;
-			n->globid = globid;
-			n->tdecls = tdecls;
-			break;
-		// special node func
-		case T_FUNC:
-			n->type = type;
-			n->globid = globid;
-			n->vdecls = vdecls;
-			n->blk = blk;
-			break;
-		// special node number
-		case T_LIT:
-			n->val = val;
-			break;
-		// special nodes: name stored in n->str
-		case T_SLIT:
-		case T_VAR:
-		case T_GLOB:
-		case T_TYPE:
-			n->str = strdup(str);
-			n->ref_or_not = ref_or_not;
-			n->left = left;
-			break;
-		// a normal node
-		case T_OPEN_STMT:
-		case T_CLOSED_STMT:
-			n->expr = expr;
-			n->stmt1 = stmt1;
-			n->stmt2 = stmt2;
-			break;
-		default:
-			n->left = left;
-			n->right = right;
-		}
-
-	return n;
+  return n;
 }
 
-/* create a new AST node */
-node *add_astnode(int tag, char *name, node *left, node *right)
+/* Add a externs node (Recursive)
+ *  left:
+ *  right:
+ */
+Node *add_externs(Node *left, Node *right)
 {
-	return add_node(tag, name, "", 0, left, right, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-}
-/* create a function node */
-node *add_func(node *type, node *globid, node *vdecls, node *blk)
-{
-	return add_node(T_FUNC, "func", "", 0, NULL, NULL, type, globid, NULL, vdecls, blk, NULL, NULL, NULL, false);
-}
-/* create an extern node */
-node *add_extern(node *type, node *globid, node *tdecls)
-{
-	return add_node(T_EXTERN, "extern", "", 0, NULL, NULL, type, globid, tdecls, NULL, NULL, NULL, NULL, NULL, false);
-}
-/* create a open/closed statement node */
-node *add_ocstmt(int tag, char *name, node *expr, node *stmt1, node *stmt2)
-{
-		return add_node(tag, name, "", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, expr, stmt1, stmt2, false);
-}
-/* create a lit or flit node */
-node *add_lit(char *valstr)
-{
-	int flit = 0, len = strlen(valstr);
-	for (int i=0; i<=len; ++i) {
-		if (valstr[i] == '.') {
-			flit = 1;
-			break;
-		}
-	}
-	//fprintf(stderr, "%f\n", val);
-	if (flit)
-		return add_node(T_LIT, "flit", "", atof(valstr), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-	else
-		return add_node(T_LIT, "lit", "", atoi(valstr), NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_EXTERNS;
+  n->node_externs.left = left;
+  n->node_externs.right = right;
+
+  return n;
 }
 
-/* create a slit node */
-node *add_slit(char *str)
+/* Add a extern node
+ *  type: return type
+ *  globid: function name
+ *  tdecls: type declarations
+ */
+Node *add_extern(Node *type, Node *globid, Node *tdecls)
 {
-	return add_node(T_SLIT, "slit", str, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-}
-/* create a variable identifier node */
-node *add_var(char *varname)
-{
-	return add_node(T_VAR, "varval", varname, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-}
-/* create a function identifier node */
-node *add_globid(char *globname)
-{
-	return add_node(T_GLOB, "globid", globname, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-}
-/* create a type node */
-node *add_type(char *typename)
-{
-	return add_node(T_TYPE, "type", typename, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-}
-/* create a ref type */
-node *add_ref_type(char *reftype, node *child)
-{
-	return add_node(T_TYPE, reftype, "", 0, child, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_EXTERN;
+  n->node_extern.type = type;
+  n->node_extern.globid = globid;
+  n->node_extern.tdecls = tdecls;
+
+  return n;
 }
 
-//add RETURN node
+/* Add a funcs node (Recursive)
+ *  left:
+ *  right:
+ */
+Node *add_funcs(Node *left, Node *right)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_FUNCS;
+  n->node_funcs.left = left;
+  n->node_funcs.right = right;
 
-// put_indent: generate the indent based on the input
+  return n;
+}
+
+/* Add a func node
+ *  type: return type of the function
+ *  globid: function name
+ *  vdecls: varaible declarations
+ *  blk:  function block
+ */
+Node *add_func(Node *type, Node *globid, Node *vdecls, Node *blk)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_FUNC;
+  n->node_func.type = type;
+  n->node_func.globid = globid;
+  n->node_func.vdecls = vdecls;
+  n->node_func.blk = blk;
+
+  return n;
+}
+
+/* Add a blk node
+ *  stmts: statements
+ */
+Node *add_blk(Node *stmts)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_BLK;
+  n->node_blk.stmts = stmts;
+
+  return n;
+}
+
+/* Add a stmts node (recursive type)
+ *  left:
+ *  right:
+ */
+Node *add_stmts(Node *left, Node *right)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_STMTS;
+  n->node_stmts.left = left;
+  n->node_stmts.right = right;
+
+  return n;
+}
+
+/* Add a stmt node
+ *  either a open statement, or a closed statement
+ */
+Node *add_stmt(Node *oc_stmt)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_STMT;
+  n->node_stmt.oc_stmt = oc_stmt;
+
+  return n;
+}
+
+/* Add a open_stmt node
+ *  ocstmt_tag: IF, WHILE
+ *  exp: condition
+ *  stmt1: first statement
+ *  stmt2: second statement
+ */
+Node *add_open_stmt(enum ocstmt_tag ocstmt_tag, Node *exp, Node *stmt1, Node *stmt2)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_OPEN_STMT;
+  n->node_open_stmt.ocstmt_tag = ocstmt_tag;
+  n->node_open_stmt.exp = exp;
+  n->node_open_stmt.stmt1 = stmt1;
+  n->node_open_stmt.stmt2 = stmt2;
+
+  return n;
+}
+
+/* Add a closed_stmt node
+ *  ocstmt_tag: IF, WHILE
+ *  exp: condition
+ *  stmt1: first statement
+ *  stmt2: second statement
+ */
+Node *add_closed_stmt(enum ocstmt_tag ocstmt_tag, Node *exp, Node *stmt1, Node *stmt2)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_CLOSED_STMT;
+  n->node_closed_stmt.ocstmt_tag = ocstmt_tag;
+  n->node_closed_stmt.exp = exp;
+  n->node_closed_stmt.stmt1 = stmt1;
+  n->node_closed_stmt.stmt2 = stmt2;
+
+  return n;
+}
+
+/* Add a simple_stmt node
+ *  simple_stmt_tag:
+ *  blk: this statement is a block (scoping!)
+ *  exp: expression type (multiple)
+ *  vdecl: variable declaration
+ *  slit: printslit
+ */
+Node *add_simple_stmt(enum simple_stmt_tag simple_stmt_tag, Node *blk, Node *exp, Node *vdecl, Node *slit)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_SIMPLE_STMT;
+  n->node_simple_stmt.simple_stmt_tag = simple_stmt_tag;
+  n->node_simple_stmt.blk = blk;
+  n->node_simple_stmt.exp = exp;
+  n->node_simple_stmt.vdecl = vdecl;
+  n->node_simple_stmt.slit = slit;
+
+  return n;
+}
+
+/* Add a exps type (Recursive)
+ *  left:
+ *  right:
+ */
+Node *add_exps(Node *left, Node *right)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_EXPS;
+  n->node_exps.left = left;
+  n->node_exps.right = right;
+
+  return n;
+}
+
+/* Add a exp type
+ *  exp_tag: the tag of the expression
+ *  exp_type: the type of the expression (no ref type) - No value at initialization
+ *  exp: expression
+ *  binop: binary op
+ *  uop: unary op
+ *  lit: number
+ *  var: variable
+ *  globid: function call
+ */
+Node *add_exp(enum exp_tag exp_tag, Node *exp, Node *binop, Node *uop, Node *lit, Node *var, Node *globid, Node *exps)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_EXP;
+  n->node_exp.exp_tag = exp_tag;
+  // n->node_exp.exp_type = exp_type;
+  n->node_exp.exp = exp;
+  n->node_exp.binop = binop;
+  n->node_exp.uop = uop;
+  n->node_exp.lit = lit;
+  n->node_exp.var = var;
+  n->node_exp.globid = globid;
+  n->node_exp.exps = exps;
+
+  return n;
+}
+
+/* Add a binop node
+ *  op: operator
+ *  exp_type: the type of the expression (no ref type)
+ *  exp_left: the expression on the left hand side
+ *  exp_right: the expression on the right hand side
+ *  var: variable assignment
+ */
+Node *add_binop(enum binop_tag op, Node *exp_left, Node *var, Node *exp_right)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_BINOP;
+  n->node_binop.op = op;
+  n->node_binop.exp_left = exp_left;
+  n->node_binop.var = var;
+  n->node_binop.exp_right = exp_right;
+
+  return n;
+}
+
+/* Add a uop node
+ *  op: operator
+ *  exp: expression
+ */
+Node *add_uop(enum uop_tag op, Node *exp)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_UOP;
+  n->node_uop.op = op;
+  n->node_uop.exp = exp;
+
+  return n;
+}
+
+/* Add a lit type (Check between float and int)
+ *  lit_type: type of the number, LIT, FLIT
+ *  exp_type: the type of the expression //not initialized
+ *  value: the value of the number, as a double
+ */
+Node *add_lit(char *valstr)
+{
+  int len = strlen(valstr);
+  enum lit_tag flit = LIT;
+
+  for (int i=0; i<len; ++i) {
+    if (valstr[i] == '.') {
+      flit = FLIT;
+      break;
+    }
+  }
+
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_LIT;
+  n->node_lit.lit_type = flit;
+  n->node_lit.value = atof(valstr);
+
+  return n;
+}
+
+/* Add a slit node
+ *  str: type of the string
+ */
+Node *add_slit(char *str)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_SLIT;
+  n->node_slit.str = strdup(str);
+
+  return n;
+}
+
+/* Add a var node
+ *  varname: the name of the variable
+ */
+Node *add_var(char *varname)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_VAR;
+  n->node_var.varname = strdup(varname);
+
+  return n;
+}
+
+/* Add a globid node
+ *  globid: The function name
+ */
+Node *add_globid(char *funcname)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_GLOBID;
+  n->node_globid.funcname = strdup(funcname);
+
+  return n;
+}
+
+/* Add a type node
+ *  type_tag: The type of the tag, use strncmp to assign
+ *  type: The type being referenced
+ */
+Node *add_type(char *typename, Node *type)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_TYPE;
+  if (!strncmp(typename, "int", MAX_TYPE)) {
+    n->node_type.type_tag = TYPE_INT;
+  } else if (!strncmp(typename, "cint", MAX_TYPE)) {
+    n->node_type.type_tag = TYPE_CINT;
+  } else if (!strncmp(typename, "float", MAX_TYPE)) {
+    n->node_type.type_tag = TYPE_FLOAT;
+  } else if (!strncmp(typename, "sfloat", MAX_TYPE)) {
+    n->node_type.type_tag = TYPE_SFLOAT;
+  } else if (!strncmp(typename, "ref", MAX_TYPE)) {
+    n->node_type.type_tag = TYPE_REF;
+  } else if (!strncmp(typename, "noalias ref", MAX_TYPE)) {
+    n->node_type.type_tag = TYPE_NOALIAS_REF;
+  } else if (!strncmp(typename, "void", MAX_TYPE)) {
+    n->node_type.type_tag = TYPE_VOID;
+  } else {
+    fprintf(stderr, "unknown type name [%s]", typename);
+  }
+  n->node_type.type = type;
+
+  return n;
+}
+
+/* Add a vdecls node (recursive)
+ *  left:
+ *  right:
+ */
+Node *add_vdecls(Node *left, Node *right)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_VDECLS;
+  n->node_vdecls.left = left;
+  n->node_vdecls.right = right;
+
+  return n;
+}
+
+/* Add a tdecls node (recursive)
+ *  left:
+ *  right:
+ */
+Node *add_tdecls(Node *left, Node *right)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_TDECLS;
+  n->node_tdecls.left = left;
+  n->node_tdecls.right = right;
+
+  return n;
+}
+
+/* Add a vdecl node
+ *  type: the type to declare
+ *  var: the variable declared
+ */
+Node *add_vdecl(Node *type, Node *var)
+{
+  Node *n = calloc(1, sizeof(Node));
+  n->tag = T_VDECL;
+  n->node_vdecl.type = type;
+  n->node_vdecl.var = var;
+
+  return n;
+}
+
+/* Free function (Recursive)
+ */
+void free_ast(Node *n)
+{
+  if (n==NULL) return;
+
+  switch(n->tag) {
+    case T_PROG:
+      free_ast(n->node_prog.externs);
+      free_ast(n->node_prog.funcs);
+      break;
+    case T_EXTERNS:
+      free_ast(n->node_externs.left);
+      free_ast(n->node_externs.right);
+      break;
+    case T_EXTERN:
+      free_ast(n->node_extern.type);
+      free_ast(n->node_extern.globid);
+      free_ast(n->node_extern.tdecls);
+      break;
+    case T_FUNCS:
+      free_ast(n->node_funcs.left);
+      free_ast(n->node_funcs.right);
+      break;
+    case T_FUNC:
+      free_ast(n->node_func.type);
+      free_ast(n->node_func.globid);
+      free_ast(n->node_func.vdecls);
+      free_ast(n->node_func.blk);
+      break;
+    case T_BLK:
+      free_ast(n->node_blk.stmts);
+      break;
+    case T_STMTS:
+      free_ast(n->node_stmts.left);
+      free_ast(n->node_stmts.right);
+      break;
+    case T_STMT:
+      free_ast(n->node_stmt.oc_stmt);
+      break;
+    case T_OPEN_STMT:
+      free_ast(n->node_open_stmt.exp);
+      free_ast(n->node_open_stmt.stmt1);
+      free_ast(n->node_open_stmt.stmt2);
+      break;
+    case T_CLOSED_STMT:
+      free_ast(n->node_closed_stmt.exp);
+      free_ast(n->node_closed_stmt.stmt1);
+      free_ast(n->node_closed_stmt.stmt2);
+      break;
+    case T_SIMPLE_STMT:
+      free_ast(n->node_simple_stmt.blk);
+      free_ast(n->node_simple_stmt.exp);
+      free_ast(n->node_simple_stmt.vdecl);
+      free_ast(n->node_simple_stmt.slit);
+      break;
+    case T_EXPS:
+      free_ast(n->node_exps.left);
+      free_ast(n->node_exps.right);
+      break;
+    case T_EXP:
+      free_ast(n->node_exp.exp);
+      free_ast(n->node_exp.binop);
+      free_ast(n->node_exp.uop);
+      free_ast(n->node_exp.lit);
+      free_ast(n->node_exp.var);
+      free_ast(n->node_exp.globid);
+      free_ast(n->node_exp.exps);
+      break;
+    case T_BINOP:
+      free_ast(n->node_binop.exp_left);
+      free_ast(n->node_binop.exp_right);
+      free_ast(n->node_binop.var);
+      break;
+    case T_UOP:
+      free_ast(n->node_uop.exp);
+      break;
+    case T_LIT:
+      break;
+    case T_SLIT:
+      free(n->node_slit.str);
+      break;
+    case T_VAR:
+      free(n->node_var.varname);
+      break;
+    case T_GLOBID:
+      free(n->node_globid.funcname);
+      break;
+    case T_TYPE:
+      free_ast(n->node_type.type);
+      break;
+    case T_VDECLS:
+      free_ast(n->node_vdecls.left);
+      free_ast(n->node_vdecls.right);
+      break;
+    case T_TDECLS:
+      free_ast(n->node_tdecls.left);
+      free_ast(n->node_tdecls.right);
+      break;
+    case T_VDECL:
+      free_ast(n->node_vdecl.type);
+      free_ast(n->node_vdecl.var);
+      break;
+  }
+  free(n);
+
+  return;
+}
+
+/* put_indent: generate the indent based on the input */
 void put_indent(int dent, FILE *out)
 {
 	for (int i=0; i<dent; ++i)
@@ -126,574 +499,739 @@ void put_indent(int dent, FILE *out)
 	return;
 }
 
-// print out the string by the given indent
-void put_str(char *str1, char *str2, int dent, FILE *out)
-{
-	put_indent(dent, out);
-	if (strlen(str1)==0) fprintf(out, "%s\n", str2);
-	else fprintf(out, "%s%s\n", str1, str2);
-	return;
-}
-
-// print out the string (value) by the given indent
-void put_strn(char *str, int value, int dent, FILE *out)
-{
-	put_indent(dent, out);
-	fprintf(out, "%s: %d\n", str, value);
-	return;
-}
-
-// print out the type declaration of the the given type node
-void print_typedec(node *n, FILE *out)
+/* print_type: print out the type declaration of the the given type node
+    no indent. no newline.
+ */
+static void print_type(Node *n, FILE *out)
 {
 	assert(n->tag == T_TYPE);
-	//none terminal node
-	//printf("%s\n", n->name);
-	if (strcmp(n->name, "type") != 0) {
-		fprintf(out, "%s ", n->name);
-		print_typedec(n->left, out);
-	} else {
-		fprintf(out, "%s\n", n->str);
-	}
-	//printf("%s %s %d\n", n->name, n->str, n->left);
-	return;
+
+  switch (n->node_type.type_tag) {
+    case TYPE_INT:
+      fprintf(out, "int");
+      break;
+    case TYPE_CINT:
+      fprintf(out, "cint");
+      break;
+    case TYPE_FLOAT:
+      fprintf(out, "float");
+      break;
+    case TYPE_SFLOAT:
+      fprintf(out, "sfloat");
+      break;
+    case TYPE_VOID:
+      fprintf(out, "void");
+      break;
+    case TYPE_NOALIAS_REF:
+      fprintf(out, "noalias ref ");
+      print_type(n->node_type.type, out);
+      break;
+    case TYPE_REF:
+      fprintf(out, "ref ");
+      print_type(n->node_type.type, out);
+      break;
+  }
+  return;
 }
 
-// print out the type declaration of the given var node
-void print_varname(node *n, int dent, FILE *out)
+/* print_op: print out the operator of the given type
+ *  newline.
+ */
+static void print_bop(enum binop_tag tag, FILE *out)
 {
-	assert(n->tag == T_VAR);
-	put_str("var: ", n->str, dent, out);
-	return;
+  switch (tag) {
+    case BINOP_ADD:
+      fprintf(out, "op: add\n");
+      break;
+    case BINOP_MUL:
+      fprintf(out, "op: mul\n");
+      break;
+    case BINOP_SUB:
+      fprintf(out, "op: sub\n");
+      break;
+    case BINOP_DIV:
+      fprintf(out, "op: div\n");
+      break;
+    case BINOP_EQ:
+      fprintf(out, "op: eq\n");
+      break;
+    case BINOP_LT:
+      fprintf(out, "op: lt\n");
+      break;
+    case BINOP_GT:
+      fprintf(out, "op: gt\n");
+      break;
+    case BINOP_AND:
+      fprintf(out, "op: and\n");
+      break;
+    case BINOP_OR:
+      fprintf(out, "op: or\n");
+      break;
+    default:
+      fprintf(stderr, "unknown tag at <binop>!\n");
+  }
 }
 
-// printout the expression type
-void print_exp_type(node *n, int dent, FILE *out) {
+/* print_ast: generate the AST and write it to STDIN (main printer function)
+ */
+void print_ast(Node *n, int dent, FILE *out)
+{
+  if (n==NULL) return;
+  
+  switch (n->tag) {
+
+    case T_PROG:
+      put_indent(dent, out);
+      fprintf(out, "name: prog\n");
+
+      put_indent(dent, out);
+      fprintf(out, "funcs:\n");
+
+      // recurse to the children
+      print_ast(n->node_prog.funcs, dent+1, out);
+      print_ast(n->node_prog.externs, dent, out);
+      break;
+
+    case T_EXTERNS:
+      if (n->node_externs.left->tag == T_EXTERN) {
+        // case externs : extern
+        put_indent(dent, out);
+        fprintf(out, "externs:\n");
+
+        put_indent(dent+1, out);
+        fprintf(out, "name: externs\n");
+
+        put_indent(dent+1, out);
+        fprintf(out, "externs:\n");
+
+        put_indent(dent+2, out);
+        fprintf(out, "-\n");
+
+        // recurse to extern
+        print_ast(n->node_externs.left, dent+3, out);
+      } else {
+        // case externs : externs extern
+        // recurse to <externs>
+        print_ast(n->node_externs.left, dent, out);
+        // recurse to <extern>
+        put_indent(dent+2, out);
+        fprintf(out, "-\n");
+
+        print_ast(n->node_externs.right, dent+3, out);
+      }
+      break;
+
+    case T_EXTERN:
+      // name: extern
+      put_indent(dent, out);
+      fprintf(out, "name: extern\n");
+
+      // ret_type: <type>
+      put_indent(dent, out);
+      fprintf(out, "ret_type: ");
+
+      print_type(n->node_extern.type, out);
+      fprintf(out, "\n");
+
+      // <globid>
+      print_ast(n->node_extern.globid, dent, out);
+      // <tdecls>
+      if (n->node_extern.tdecls!= NULL)
+        print_ast(n->node_extern.tdecls, dent, out);
+
+      break;
+
+    case T_TDECLS:
+      if (n->node_tdecls.left->tag == T_TYPE) {
+        // case: tdecls : type
+
+        // tdecls:
+        put_indent(dent, out);
+        fprintf(out, "tdecls:\n");
+
+        // name: tdecls
+        put_indent(dent+1, out);
+        fprintf(out, "name: tdecls\n");
+
+        // name: types
+        put_indent(dent+1, out);
+        fprintf(out, "types:\n");
+
+        // - type
+        put_indent(dent+2, out);
+        fprintf(out, "- ");
+
+        print_type(n->node_tdecls.left, out);
+        fprintf(out, "\n");
+      } else {
+        // case: tdecls : tdecls type
+        print_ast(n->node_tdecls.left, dent, out);
+
+        // - type
+        put_indent(dent+2, out);
+        fprintf(out, "- ");
+
+        print_type(n->node_tdecls.right, out);
+        fprintf(out, "\n");
+      }
+      break;
+
+    case T_GLOBID:
+      // globid: <funcname>
+      put_indent(dent, out);
+      fprintf(out, "globid: %s\n", n->node_globid.funcname);
+      break;
+
+    case T_FUNCS:
+      if (n->node_funcs.left->tag == T_FUNC) {
+        // first function (case funcs : func)
+        put_indent(dent, out);
+        fprintf(out, "name: funcs\n");
+
+        put_indent(dent, out);
+        fprintf(out, "funcs:\n");
+
+        put_indent(dent+1, out);
+        fprintf(out, "-\n");
+
+        // Resurce (only one child)
+        print_ast(n->node_funcs.left, dent+2, out);
+      } else {
+        // case funcs : funcs func
+        // left node: funcs
+        print_ast(n->node_funcs.left, dent, out);
+        // right node: func
+        put_indent(dent+1, out);
+        fprintf(out, "-\n");
+
+        print_ast(n->node_funcs.right, dent+2, out);
+      }
+      break;
+
+    case T_FUNC:
+      // name: func
+      put_indent(dent, out);
+      fprintf(out, "name: func\n");
+
+      // ret_type: <type>
+      put_indent(dent, out);
+      fprintf(out, "ret_type: ");
+
+      print_type(n->node_func.type, out);
+      fprintf(out, "\n");
+
+      // <globid>
+      print_ast(n->node_func.globid, dent, out);
+
+      // blk:
+      put_indent(dent, out);
+      fprintf(out, "blk:\n");
+      // <blk>
+      print_ast(n->node_func.blk, dent+1, out);
+
+      // <vdecls>
+      if (n->node_func.vdecls!= NULL)
+        print_ast(n->node_func.vdecls, dent, out);
+
+      break;
+
+    case T_VDECLS:
+      if (n->node_vdecls.left->tag == T_VDECL) {
+        // case - vdecls : vdecl
+        // vdecls:
+        put_indent(dent, out);
+        fprintf(out, "vdecls:\n");
+        // name: vdecls
+        put_indent(dent+1, out);
+        fprintf(out, "name: vdecls\n");
+        // vars:
+        put_indent(dent+1, out);
+        fprintf(out, "vars:\n");
+        // -
+        put_indent(dent+2, out);
+        fprintf(out, "-\n");
+
+        // recurse
+        print_ast(n->node_vdecls.left, dent+3, out);
+      } else {
+        // case - vdecls : vdecls vdecl
+        // recurse vdecls
+        print_ast(n->node_vdecls.left, dent, out);
+
+        put_indent(dent+2, out);
+        fprintf(out, "-\n");
+        // recurse vdecl
+        print_ast(n->node_vdecls.right, dent+3, out);
+      }
+      break;
+
+    case T_VDECL:
+      // node: vdecl
+      put_indent(dent, out);
+      fprintf(out, "node: vdecl\n");
+      // type: <type>
+      put_indent(dent, out);
+      fprintf(out, "type: ");
+      print_type(n->node_vdecl.type, out);
+      fprintf(out, "\n");
+
+      // var: <varname>
+      put_indent(dent, out);
+      fprintf(out, "var: %s\n", n->node_vdecl.var->node_var.varname);
+
+      break;
+
+    case T_BLK:
+      // blk: [stmts]?
+      // name: blk
+      put_indent(dent, out);
+      fprintf(out, "name: blk\n");
+      // contents:
+      put_indent(dent, out);
+      fprintf(out, "contents:\n");
+
+      // recurse stmts
+      if (n->node_blk.stmts != NULL)
+        print_ast(n->node_blk.stmts, dent+1, out);
+
+      break;
+
+    case T_STMTS:
+      if (n->node_stmts.left->tag == T_STMT) {
+        // case: stmts : stmt
+        // name: stmts
+        put_indent(dent, out);
+        fprintf(out, "name: stmts\n");
+        // stmts:
+        put_indent(dent, out);
+        fprintf(out, "stmts:\n");
+        // -
+        put_indent(dent+1, out);
+        fprintf(out, "-\n");
+
+        // recurse stmt
+        print_ast(n->node_stmts.left, dent+2, out);
+      } else {
+        // case: stmts : stmts stmt
+        // recurse stmts
+        print_ast(n->node_stmts.left, dent, out);
+
+        // -
+        put_indent(dent+1, out);
+        fprintf(out, "-\n");
+        // case: stmts : stmt
+        print_ast(n->node_stmts.right, dent+2, out);
+      }
+
+      break;
+
+    case T_STMT:
+      // case: stmt : oc_stmt
+      print_ast(n->node_stmt.oc_stmt, dent, out);
+
+      break;
+
+    case T_OPEN_STMT:
+      if (n->node_open_stmt.ocstmt_tag == STMT_IF) {
+        // case "if"
+        // name: if
+        put_indent(dent, out);
+        fprintf(out, "name: if\n");
+
+        // cond:
+        put_indent(dent, out);
+        fprintf(out, "cond:\n");
+        // recurse <exp>
+        print_ast(n->node_open_stmt.exp, dent+1, out);
+
+        // stmt:
+        put_indent(dent, out);
+        fprintf(out, "stmt:\n");
+        // recurse <stmt1>
+        print_ast(n->node_open_stmt.stmt1, dent+1, out);
+
+        if (n->node_open_stmt.stmt2 != NULL) {
+          // else_stmt:
+          put_indent(dent, out);
+          fprintf(out, "else_stmt:\n");
+          // recurse <stmt2>
+          print_ast(n->node_open_stmt.stmt2, dent+1, out);
+        }
+      } else if (n->node_open_stmt.ocstmt_tag == STMT_WHILE) {
+        // case "while"
+        // name: while
+        put_indent(dent, out);
+        fprintf(out, "name: while\n");
+
+        // cond:
+        put_indent(dent, out);
+        fprintf(out, "cond:\n");
+        // recurse <exp>
+        print_ast(n->node_open_stmt.exp, dent+1, out);
+
+        // stmt:
+        put_indent(dent, out);
+        fprintf(out, "stmt:\n");
+        // recurse <stmt1>
+        print_ast(n->node_open_stmt.stmt1, dent+1, out);
+      }
+
+      break;
+
+    case T_CLOSED_STMT:
+      if (n->node_closed_stmt.ocstmt_tag == STMT_IF) {
+        // case "if"
+        // name: if
+        put_indent(dent, out);
+        fprintf(out, "name: if\n");
+
+        // cond:
+        put_indent(dent, out);
+        fprintf(out, "cond:\n");
+        // recurse <exp>
+        print_ast(n->node_closed_stmt.exp, dent+1, out);
+
+        // stmt:
+        put_indent(dent, out);
+        fprintf(out, "stmt:\n");
+        // recurse <stmt1>
+        print_ast(n->node_closed_stmt.stmt1, dent+1, out);
+
+        // else_stmt:
+        put_indent(dent, out);
+        fprintf(out, "else_stmt:\n");
+        // recurse <stmt2>
+        print_ast(n->node_closed_stmt.stmt2, dent+1, out);
+
+      } else if (n->node_closed_stmt.ocstmt_tag == STMT_WHILE) {
+        // case "while"
+        // name: while
+        put_indent(dent, out);
+        fprintf(out, "name: while\n");
+
+        // cond:
+        put_indent(dent, out);
+        fprintf(out, "cond:\n");
+        // recurse <exp>
+        print_ast(n->node_closed_stmt.exp, dent+1, out);
+
+        // stmt:
+        put_indent(dent, out);
+        fprintf(out, "stmt:\n");
+        // recurse <stmt1>
+        print_ast(n->node_closed_stmt.stmt1, dent+1, out);
+      } else {
+        // case close_stmt : simple_stmt
+        print_ast(n->node_closed_stmt.stmt1, dent, out);
+      }
+
+      break;
+
+    case T_SIMPLE_STMT:
+      // node: simple_stmt
+      // printf("%d\n", n->node_simple_stmt.simple_stmt_tag);
+      switch (n->node_simple_stmt.simple_stmt_tag) {
+        case STMT_BLK:
+          // printf("%p %p %p %p\n", n->node_simple_stmt.blk, n->node_simple_stmt.exp, n->node_simple_stmt.vdecl, n->node_simple_stmt.slit);
+          // case: simple_stmt := blk
+          // recurse <blk>
+          print_ast(n->node_simple_stmt.blk, dent, out);
+          break;
+
+        case STMT_RETURN:
+        case STMT_RETURN_VOID:
+          // case: simple_stmt := RETURN exp SEMICOL
+          // name: ret
+
+          put_indent(dent, out);
+          fprintf(out, "name: ret\n");
+          // exp:
+          put_indent(dent, out);
+          fprintf(out, "exp:\n");
+
+          // recurse <exp>
+          if (n->node_simple_stmt.exp != NULL)
+            print_ast(n->node_simple_stmt.exp, dent+1, out);
+          break;
+
+        case STMT_VARDECL:
+          // case: simple_stmt := vdecl ASSIGN exp SEMICOL
+
+          // name: vardeclstmt
+          put_indent(dent, out);
+          fprintf(out, "name: vardeclstmt\n");
+          // vdecl:
+          put_indent(dent, out);
+          fprintf(out, "vdecl:\n");
+          // recurse <vdecl>
+          print_ast(n->node_simple_stmt.vdecl, dent+1, out);
+
+          // exp:
+          put_indent(dent, out);
+          fprintf(out, "exp:\n");
+          // recurse <exp>
+          print_ast(n->node_simple_stmt.exp, dent+1, out);
+          break;
+
+        case STMT_EXPSTMT:
+          // case: simple_stmt := exp SEMICOL
+
+          // name: expstmt
+          put_indent(dent, out);
+          fprintf(out, "name: expstmt\n");
+          // exp:
+          put_indent(dent, out);
+          fprintf(out, "exp:\n");
+          // recurse <exp>
+          print_ast(n->node_simple_stmt.exp, dent+1, out);
+          break;
+
+        case STMT_PRINT:
+          // case: simple_stmt := PRINT exp SEMICOL
+
+          // name: print
+          put_indent(dent, out);
+          fprintf(out, "name: print\n");
+          // exp:
+          put_indent(dent, out);
+          fprintf(out, "exp:\n");
+          // recurse <exp>
+          print_ast(n->node_simple_stmt.exp, dent+1, out);
+          break;
+
+        case STMT_PRINTSLIT:
+          // case: simple_stmt := PRINT slit SEMICOL
+
+          // name: printslit
+          put_indent(dent, out);
+          fprintf(out, "name: printslit\n");
+          // recurse <slit>
+          print_ast(n->node_simple_stmt.slit, dent, out);
+      }
+      break;
+
+    case T_SLIT:
+      // node: slit
+
+      // string: <slit>
+      put_indent(dent, out);
+      fprintf(out, "string: %s\n", n->node_slit.str);
+      break;
+
+    case T_EXP:
+      // node: exp
+      switch (n->node_exp.exp_tag) {
+        case EXP_EXP:
+          // exp := ( exp )
+          print_ast(n->node_exp.exp, dent, out);
+          break;
+
+        case EXP_BINOP:
+          // exp := binop
+          print_ast(n->node_exp.binop, dent, out);
+          break;
+
+        case EXP_UOP:
+          // exp := uop
+          print_ast(n->node_exp.uop, dent, out);
+          break;
+
+        case EXP_LIT:
+          // exp := lit
+          print_ast(n->node_exp.lit, dent, out);
+          break;
+
+        case EXP_VAR:
+          // exp := var
+          print_ast(n->node_exp.var, dent, out);
+          break;
+
+        case EXP_GLOBID:
+          // exp := globid ( <exps>? )
+          // name: funccall
+          put_indent(dent, out);
+          fprintf(out, "name: funccall\n");
+
+          // recurse <globid>
+          print_ast(n->node_exp.globid, dent, out);
+
+          // ADD: print out the expression type
+          print_exp_type(n->node_exp.exp_type, dent, out);
+
+          // params:
+          put_indent(dent, out);
+          fprintf(out, "params:\n");
+
+          // recurse <exps>
+          print_ast(n->node_exp.exps, dent+1, out);
+      }
+      break;
+
+    case T_BINOP:
+      // node: binop
+      switch (n->node_binop.op) {
+        case BINOP_ASSIGN:
+          // binop := var ASSIGN exp
+          // name: assign
+          put_indent(dent, out);
+          fprintf(out, "name: assign\n");
+
+          // ADD: print out the expression type
+          print_exp_type(n->node_binop.exp_type, dent, out);
+
+          // var: <varname>
+          put_indent(dent, out);
+          fprintf(out, "var: %s\n", n->node_binop.var->node_var.varname);
+          // exp:
+          put_indent(dent, out);
+          fprintf(out, "exp:\n");
+          // recurse <exp_right>
+          print_ast(n->node_binop.exp_right, dent+1, out);
+          break;
+
+        default:
+          // binop := exp OP exp
+          // name: binop
+          put_indent(dent, out);
+          fprintf(out, "name: binop\n");
+          // op: <op>
+          put_indent(dent, out);
+          print_bop(n->node_binop.op, out);
+
+          // ADD: print out the expression type
+          print_exp_type(n->node_binop.exp_type, dent, out);
+
+          // lhs:
+          put_indent(dent, out);
+          fprintf(out, "lhs:\n");
+          // recurse <exp_left>
+          print_ast(n->node_binop.exp_left, dent+1, out);
+          // rhs:
+          put_indent(dent, out);
+          fprintf(out, "rhs:\n");
+          // recurse <exp_right>
+          print_ast(n->node_binop.exp_right, dent+1, out);
+      }
+      break;
+
+    case T_UOP:
+      // node: uop
+      // name: binop
+      put_indent(dent, out);
+      fprintf(out, "name: uop\n");
+      // op: <op>
+      put_indent(dent, out);
+      if (n->node_uop.op == UOP_NOT) {
+        fprintf(out, "op: not\n");
+      } else {
+        fprintf(out, "op: minus\n");
+      }
+
+      // ADD: print out the expression type
+      print_exp_type(n->node_binop.exp_type, dent, out);
+
+      // exp:
+      put_indent(dent, out);
+      fprintf(out, "exp:\n");
+      // recurse <exp>
+      print_ast(n->node_uop.exp, dent+1, out);
+      break;
+
+    case T_TYPE:
+      fprintf(stderr, "invalid access at <type>\n");
+      break;
+
+    case T_VAR:
+      // node: var
+
+      // name: varval
+      put_indent(dent, out);
+      fprintf(out, "name: varval\n");
+      // var: <varname>
+      put_indent(dent, out);
+      fprintf(out, "var: %s\n", n->node_var.varname);
+
+      // ADD: print out the expression type
+      print_exp_type(n->node_var.exp_type, dent, out);
+
+      break;
+
+    case T_EXPS:
+      // node: exps
+      if (n->node_exps.left->tag == T_EXP) {
+        // case: exps := exp
+        // name: exps
+        put_indent(dent, out);
+        fprintf(out, "name: exps\n");
+        // exps:
+        put_indent(dent, out);
+        fprintf(out, "exps:\n");
+        // -
+        put_indent(dent+1, out);
+        fprintf(out, "-\n");
+        // recurse <exp>
+        print_ast(n->node_exps.left, dent+2, out);
+      } else {
+        // case: exps := exps exp
+        // recurse <exps>
+        print_ast(n->node_exps.left, dent, out);
+
+        // -
+        put_indent(dent+1, out);
+        fprintf(out, "-\n");
+
+        // recurse <exp>
+        print_ast(n->node_exps.right, dent+2, out);
+      }
+      break;
+
+    case T_LIT:
+      // node: lit
+      // name: <lit_tag>
+      // value: <num>
+      if (n->node_lit.lit_type == LIT) {
+        put_indent(dent, out);
+        fprintf(out, "name: lit\n");
+        put_indent(dent, out);
+        fprintf(out, "value: %d\n", (int) n->node_lit.value);
+      } else {
+        put_indent(dent, out);
+        fprintf(out, "name: flit\n");
+        put_indent(dent, out);
+        fprintf(out, "value: %.6g\n", n->node_lit.value);
+      }
+
+      // ADD: print out the expression type
+      print_exp_type(n->node_lit.exp_type, dent, out);
+
+      break;
+
+    default:
+      fprintf(stderr, "unconstructed routine.\n");
+  }
+  return;
+}
+
+
+/* print_exp_type: print out the type for each expression
+ */
+void print_exp_type(enum exp_type exptype, int dent, FILE *out)
+{
 	put_indent(dent, out);
 	//printf("%d\n", n->exptype);
-	if (n->exptype == INT) {
+	if (exptype == INT) {
 		fprintf(out, "expr_type: int\n");
-	} else if (n->exptype == CINT) {
+	} else if (exptype == CINT) {
 		fprintf(out, "expr_type: cint\n");
-	} else if (n->exptype == FLOAT) {
+	} else if (exptype == FLOAT) {
 		fprintf(out, "expr_type: float\n");
-	} else if (n->exptype == SFLOAT) {
+	} else if (exptype == SFLOAT) {
 		fprintf(out, "expr_type: sfloat\n");
-	} else if (n->exptype == VOID){
+	} else if (exptype == VOID){
 		fprintf(out, "expr_type: void\n");
 	} else {
-		//printf("%s: %d %d\n", n->name, n->exptype, INT);
-		fprintf(out, "expr_type: undefined\n");
+		fprintf(out, "expr_type: undefined (%d)\n", exptype);
 	}
 
-	return;
-}
-
-// print_ast: generate the AST and write it to STDIN
-void print_ast(node *n, int dent, FILE *out)
-{
-	// Case of Constants
-	switch (n->tag) {
-
-		case T_PROG: //name:prog
-			put_str("name: ", n->name, dent, out);
-			put_str("", "funcs:", dent, out);
-			if (n->left != NULL) print_ast(n->left, dent+1, out);
-			if (n->right != NULL) print_ast(n->right, dent, out); //extern no indent
-			break;
-
-		case T_EXTERNS: //name: externs
-			//i) the recursive case
-			if(n->left->tag == T_EXTERNS) {
-
-				if (n->left != NULL) 	print_ast(n->left, dent, out);
-
-				if (n->right != NULL) {
-					put_str("", "-", dent+2, out);
-					print_ast(n->right, dent+3, out);
-				}
-				break;
-			}
-			//ii) the terminal case
-			//		last externs to recurse, put the header
-			//		recurse on left only
-			else if(n->left->tag == T_EXTERN) {
-				put_str("", "externs:", dent, out);
-				put_str("name: ", n->name, dent+1, out);
-				put_str("", "externs:", dent+1, out);
-				put_str("", "-", dent+2, out);
-				if (n->left != NULL) print_ast(n->left, dent+3, out);
-				//if (n->right != NULL) print_ast(n->right, dent+1);
-				break;
-			}
-
-		case T_EXTERN: //name: extern
-			put_str("name: ", n->name, dent, out);
-			if (n->type != NULL) {
-				put_indent(dent, out);
-				fprintf(out, "ret_");
-				print_ast(n->type, 0, out);
-			}
-			if (n->globid != NULL) print_ast(n->globid, dent, out);
-			if (n->tdecls != NULL) print_ast(n->tdecls, dent, out);
-			break;
-
-		case T_TDECLS: //name: tdecls
-			//Since it is a recursive type, use similar methods to print
-			//i)terminal case
-			if(n->left->tag == T_TYPE) {
-				put_str("", "tdecls:", dent, out);
-				put_str("name: ", n->name, dent+1, out);
-				put_str("", "types: ", dent+1, out);
-
-				if (n->left != NULL) {
-					put_indent(dent+2, out);
-					fprintf(out, "- ");
-					print_typedec(n->left, out);
-				}
-				break;
-			}
-			//ii) recursive case
-			else if(n->left->tag == T_TDECLS) {
-				if (n->left!= NULL) print_ast(n->left, dent, out);
-				//printf("activated\n");
-				if (n->right!= NULL) {
-					put_indent(dent+2, out);
-					fprintf(out, "- ");
-					print_typedec(n->right, out);
-				}
-				break;
-			}
-
-		case T_FUNCS: //name: funcs
-			if(n->left->tag == T_FUNC) {
-				put_str("name: ", n->name, dent, out);
-				put_str("", "funcs:", dent, out);
-				put_str("", "-", dent+1, out);
-				if (n->left != NULL) print_ast(n->left, dent+2, out);
-				//if (n->right != NULL) print_ast(n->right, dent+1);
-				break;
-			}
-			else {
-				if (n->left != NULL) print_ast(n->left, dent, out);
-				put_str("", "-", dent+1, out);
-				if (n->right != NULL) print_ast(n->right, dent+2, out);
-				break;
-			}
-
-		case T_FUNC: //name: func
-			put_str("name: ", n->name, dent, out);
-			put_str("ret_type: ",n->type->str, dent, out);
-			// if (n->type != NULL) print_ast(n->type, dent+1);
-			if (n->globid != NULL) print_ast(n->globid, dent, out);
-			put_str("", "blk:", dent, out);
-			if (n->blk != NULL) print_ast(n->blk, dent+1, out);
-			//printf("activated!\n");
-			if (n->vdecls != NULL) print_ast(n->vdecls, dent, out);
-			//printf("activated!\n");
-			break;
-
-		case T_BLK: //name: blk
-			put_str("name: ", n->name, dent, out);
-			put_str("", "contents:", dent, out);
-			//contents:
-			if (n->left != NULL) print_ast(n->left, dent+1, out);
-			if (n->right != NULL) print_ast(n->right, dent+1, out);
-			break;
-
-		case T_STMTS: //name:stmts
-			if(n->left->tag == T_STMT) {
-				put_str("name: ", n->name, dent, out);
-				put_str("", "stmts:", dent, out);
-				put_str("", "-", dent+1, out);
-				if (n->left != NULL) print_ast(n->left, dent+2, out);
-				// if (n->right != NULL) print_ast(n->right, dent+1);
-				break;
-			}
-			else {
-				if (n->left != NULL) print_ast(n->left, dent, out);
-
-				if (n->right != NULL) {
-					put_str("", "-", dent+1, out);
-					print_ast(n->right, dent+2, out);
-				}
-				break;
-			}
-
-		case T_STMT: //name: stmt
-			// recurse with no change
-			if (n->left != NULL) print_ast(n->left, dent, out);
-			break;
-
-		case T_OPEN_STMT: //name: open_stmt
-			//case "if"
-			if(strcmp(n->name, "if") == 0) {
-				// put_str("", "-", dent);
-				// dent++;
-				put_str("name: ", n->name, dent, out);
-				put_str("", "cond:", dent, out);
-				if (n->expr != NULL) print_ast(n->expr, dent+1, out);
-				put_str("", "stmt:", dent, out);
-				if (n->stmt1 != NULL)	print_ast(n->stmt1, dent+1, out);
-
-				// check if the second statement exists
-				if (n->stmt2 != NULL)	{
-					put_str("", "else_stmt:", dent, out);
-					print_ast(n->stmt2, dent+1, out);
-				}
-				break;
-			}
-			//case "while"
-			else if(strcmp(n->name, "while") == 0) {
-				// put_str("", "-", dent);
-				// dent++;
-				put_str("name: ", n->name, dent, out);
-				put_str("", "cond:", dent, out);
-				if (n->expr != NULL) print_ast(n->expr, dent+1, out);
-				put_str("", "stmt:", dent, out);
-				if (n->stmt1 != NULL) print_ast(n->stmt1, dent+1, out);
-				break;
-			}
-
-		case T_CLOSED_STMT: //name: closed_stmt
-			//case "if"
-			if(strcmp(n->name, "if") == 0) {
-				// put_str("", "-", dent);
-				// dent++;
-				put_str("name: ", n->name, dent, out);
-				put_str("", "cond:", dent, out);
-				if (n->expr != NULL) print_ast(n->expr, dent+1, out);
-				put_str("", "stmt:", dent, out);
-				if (n->stmt1 != NULL)	print_ast(n->stmt1, dent+1, out);
-
-				// check if the second statement exists
-				if (n->stmt2 != NULL)	{
-					put_str("", "else_stmt:", dent, out);
-					print_ast(n->stmt2, dent+1, out);
-				}
-				break;
-			}
-			//case "while"
-			else if(strcmp(n->name, "while") == 0) {
-				// put_str("", "-", dent);
-				// dent++;
-				put_str("name: ", n->name, dent, out);
-				put_str("", "cond:", dent, out);
-				if (n->expr != NULL) print_ast(n->expr, dent+1, out);
-				put_str("", "stmt:", dent, out);
-				//printf("activated!\n");
-				if (n->stmt1 != NULL) print_ast(n->stmt1, dent+1, out);
-				break;
-			}
-			//case "simple", proceed with no change
-			else if (strcmp(n->name, "simple") == 0) {
-				//printf("activated!\n");
-				if (n->stmt1 != NULL) print_ast(n->stmt1, dent, out);
-				break;
-			}
-
-		case T_SIMPLE_STMT: //name: simple_stmt
-			//name == "if", should add "cond:\n" and else_stmt
-
-			if(strcmp(n->name, "return") == 0) {
-				// put_str("", "-", dent);
-				// dent++;
-				put_str("", "name: ret", dent, out);
-				put_str("", "exp: ", dent, out);
-				if (n->left != NULL) print_ast(n->left, dent+1, out);
-				if (n->right != NULL) print_ast(n->right, dent+1, out);
-				break;
-			}
-			else if(strcmp(n->name, "vardeclstmt") == 0) {
-				put_str("name: ", n->name, dent, out);
-				put_str("", "vdecl:", dent, out);
-				if (n->left != NULL) print_ast(n->left, dent+1, out);
-				put_str("", "exp:", dent, out);
-				if (n->right != NULL) print_ast(n->right, dent+1, out);//align exp with vardeclstmt
-				break;
-			}
-			else if(strcmp(n->name, "print") == 0) {
-				// put_str("", "-", dent);
-				// dent++;
-				put_str("name: ", n->name, dent, out);
-				put_str("", "exp:", dent, out);
-				if (n->left != NULL) print_ast(n->left, dent+1, out);
-				break;
-			}
-			else if(strcmp(n->name, "printslit") == 0) {
-				// put_str("", "-", dent);
-				// dent++;
-				put_str("name: ", n->name, dent, out);
-				if (n->left != NULL) print_ast(n->left, dent, out);
-				if (n->right != NULL) print_ast(n->right, dent, out);
-				break;
-			}
-			else if(strcmp(n->name, "expstmt") == 0){
-				put_str("name: ", n->name, dent, out);
-				put_str("", "exp:", dent, out);
-				if (n->left != NULL) print_ast(n->left, dent+1, out);
-				if (n->right != NULL) print_ast(n->right, dent+1, out);
-				break;
-			}
-			else if(strcmp(n->name, "blk") == 0) {
-				if (n->left != NULL) print_ast(n->left, dent, out);
-				break;
-			} else {
-				fprintf(out, "undefined!\n");
-				break;
-			}
-
-		case T_EXPS: // name: exps
-			if(n->left->tag == T_EXP) {
-				put_str("name: ", n->name, dent, out);
-				put_str("", "exps:", dent, out);
-				put_str("", "-", dent+1, out);
-				if (n->left != NULL) print_ast(n->left, dent+2, out);
-				if (n->right != NULL) print_ast(n->right, dent+2, out);
-				break;
-			}
-			else {
-				if (n->left != NULL) print_ast(n->left, dent, out);
-
-				if (n->right != NULL) {
-					put_str("", "-", dent+1, out);
-					print_ast(n->right, dent+2, out);
-				}
-				break;
-			}
-			break;
-
-		case T_EXP: //name: exp
-			//print_exp_type(n, dent, out);
-			if(strcmp(n->name, "exp") == 0) {
-				//put_str("", "exp:", dent);
-				if (n->left != NULL) print_ast(n->left, dent, out);
-				//if (n->right != NULL) print_ast(n->right, dent);
-				break;
-			}
-			else if(strcmp(n->name, "binop") == 0 || strcmp(n->name, "uop") == 0) {
-				//printf("activated!\n");
-				if (n->left != NULL) print_ast(n->left, dent, out);
-				break;
-			}
-			else if(strcmp(n->name, "var") == 0) {
-				// put_str("var: ", n->str, dent);
-				if (n->left != NULL) print_ast(n->left, dent, out);
-				break;
-			}
-			else if(strcmp(n->name, "globid") == 0) {
-				//put_str("", "exp:", dent);
-				put_str("","name: funccall", dent+1, out);
-				print_exp_type(n, dent+1, out);
-				if (n->left != NULL) print_ast(n->left, dent+1, out);
-				put_str("", "params:", dent+1, out);
-				if (n->right != NULL) print_ast(n->right, dent+2, out);
-			break;
-			}
-			else if (strcmp(n->name, "lit") == 0) {
-				//put_str("", "exp:", dent);
-				if (n->left != NULL) print_ast(n->left, dent+1, out);
-				break;
-			}
-			break;
-
-		case T_BINOP: //name: binop
-			//print_exp_type(n, dent, out);
-			if(strcmp(n->name, "assign") == 0) {
-				put_str("name: ", n->name, dent, out);
-
-				//printf("binop: %d\n", n->exptype);
-
-				print_exp_type(n, dent, out);
-				//print_exp_type(n, dent, out);
-				put_str("var: ", n->left->str, dent, out);
-				put_str("", "exp:", dent, out);
-				//if (n->left != NULL) print_ast(n->left, dent);
-				if (n->right != NULL) print_ast(n->right, dent+1, out);
-				break;
-			}
-			else {
-				put_str("", "name: binop", dent, out);
-				//printout expression type
-				// printf("binop: %d\n", n->exptype);
-
-				print_exp_type(n, dent, out);
-				//printout expression type
-				put_str("op: ", n->name, dent, out);
-				// printf("BINOP, n->name: %s\n",n->name );
-				put_str("", "lhs: ", dent, out);
-
-				if (n->left != NULL) {
-					// printf("%s %d\n", n->left->name, T_VAR);
-					//if(strcmp(n->left->name, "var") == 0) {
-					//	put_str("", "name: varval", dent+1);
-					//}
-					print_ast(n->left, dent+1, out);
-				}
-				put_str("", "rhs: ", dent, out);
-				if (n->right != NULL) {
-					//if(strcmp(n->right->name, "var") == 0) {
-						//put_str("", "name: varval", dent+1);
-					//}
-					//printf("activated!\n");
-					print_ast(n->right, dent+1, out);
-				}
-				break;
-			}
-			break;
-
-		case T_UOP: //name: uop
-			//print_exp_type(n, dent, out);
-			put_str("", "name: uop", dent, out); //newly inserted
-			//printout expression type
-			print_exp_type(n, dent, out);
-			//printout expression type
-			put_str("op: ", n->name, dent, out);
-			put_str("", "exp:", dent, out);
-			if (n->left != NULL) print_ast(n->left, dent+1, out);
-			//if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
-
-		case T_SLIT: //name: slit
-			put_str("string: ", n->str, dent, out);
-			if (n->left != NULL) print_ast(n->left, dent+1, out);
-			if (n->right != NULL) print_ast(n->right, dent+1, out);
-			break;
-
-		case T_LIT: //name: lit
-			//print_exp_type(n, dent, out);
-			put_str("name: ", n->name, dent, out);
-			print_exp_type(n, dent, out);
-			put_indent(dent, out);
-			if (strcmp("lit", n->name) == 0) {
-				fprintf(out, "value: %.0lf\n", n->val);
-			} else if (strcmp("flit", n->name) == 0) {
-				fprintf(out, "value: %.6g\n", n->val);
-			}
-			//if (n->left != NULL) print_ast(n->left, dent+1);
-			//if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
-
-		case T_VAR: //name: var
-			//print_exp_type(n, dent, out);
-			put_str("", "name: varval", dent, out);
-			print_exp_type(n, dent, out);
-			put_str("var: ", n->str, dent, out);
-			//if (n->left != NULL) print_ast(n->left, dent+1);
-			//if (n->right != NULL) print_ast(n->right, dent+1);
-			break;
-
-		case T_ID: //name: identifier
-			put_str("name: ", n->str, dent, out);
-			//print_exp_type(n, dent, out);
-			if (n->left != NULL) print_ast(n->left, dent+1, out);
-			if (n->right != NULL) print_ast(n->right, dent+1, out);
-			break;
-
-		case T_GLOB: //name: globid
-			put_str("globid: ", n->str, dent, out);
-			//print_exp_type(n, dent, out);
-			if (n->left != NULL) print_ast(n->left, dent+1, out);
-			if (n->right != NULL) print_ast(n->right, dent+1, out);
-			break;
-
-		case T_VDECLS: //name: vdecls
-			//Since it is a recursive type, use similar methods to vdecls:
-			//i)terminal case
-			if(n->left->tag == T_VDECL) {
-				put_str("", "vdecls:", dent, out);
-				put_str("name: ", n->name, dent+1, out);
-				put_str("", "vars:", dent+1, out);
-				put_str("", "-", dent+2, out);
-
-				if (n->left != NULL) print_ast(n->left, dent+3, out);
-
-				break;
-			}
-			//ii) recursive case
-			else if(n->left->tag == T_VDECLS) {
-				if (n->left!= NULL) print_ast(n->left, dent, out);
-				//printf("activated\n");
-				put_str("", "-", dent+2, out);
-				if (n->right != NULL) print_ast(n->right, dent+3, out);
-
-				break;
-			}
-			/*
-			put_str("", "vdecls:", dent);
-			put_str("name: ", n->name, dent+1);
-			put_str("", "vars:", dent+1);
-			put_str("", "-", dent+2);
-			if (n->left != NULL) print_ast(n->left, dent+3);
-			if (n->right != NULL) print_ast(n->right, dent+3);
-			break;
-			*/
-			break;
-
-		case T_VDECL: //name: vdecl
-			//fprintf(stderr, "%s\n", n->left->name);
-
-			put_str("node: ", n->name, dent, out);
-			if (n->left != NULL) print_ast(n->left, dent, out);
-
-			if (n->right != NULL) {
-				//fprintf(stderr, "%s\n", n->right->name);
-				print_varname(n->right, dent, out);
-			}
-			break;
-		// case T_RETURN
-
-		case T_TYPE: //name: type
-			put_indent(dent, out);
-			fprintf(out, "type: ");
-			print_typedec(n, out);
-			break;
-			/*
-			if(strcmp(n->name, "ref") == 0) {
-
-				// printf("type: %s %s\n", n->name, n->left->name);
-				if (n->left != NULL) print_ast(n->left, dent+1);
-				//if (n->right != NULL) print_ast(n->right, dent+1);
-				break;
-			}
-			else if(strcmp(n->name, "noalias ref") == 0) {
-				put_indent(dent);
-				//printf("type: %s %s\n", n->name, n->left->str);
-				if (n->left != NULL) print_ast(n->left, dent+1);
-				//if (n->right != NULL) print_ast(n->right, dent+1);
-				break;
-			}
-			else {
-				put_str("type: ", n->str, dent);
-				//if (n->left != NULL) print_ast(n->left, dent+1);
-				//if (n->right != NULL) print_ast(n->right, dent+1);
-				break;
-			}
-		*/
-
-		default:
-			fprintf(out, "unrecognized\n");
-			break;
-		}
-
-		return;
-}
-
-// free_node: free the AST generated by bison
-void free_node(node *n)
-{
-	if (n==NULL) return;
-
-	free_node(n->left);
-	free_node(n->right);
-	free_node(n->type);
-	free_node(n->globid);
-	free_node(n->tdecls);
-	free_node(n->vdecls);
-	free_node(n->blk);
-	free_node(n->expr);
-	free_node(n->stmt1);
-	free_node(n->stmt2);
-	free(n);
 	return;
 }

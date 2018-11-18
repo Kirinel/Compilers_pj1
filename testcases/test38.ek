@@ -1,7 +1,0 @@
-#test38: The type cannot be ref ref
-
-extern int inc(ref ref int, int);
-
-def int run() {
-
-}

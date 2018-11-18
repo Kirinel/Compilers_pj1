@@ -1,9 +1,0 @@
-#test37: The type cannot be ref ref
-
-def int inc(ref ref int $n) {
-  return;
-}
-
-def int run() {
-
-}

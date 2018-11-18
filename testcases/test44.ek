@@ -1,9 +1,0 @@
-#test44: funcall, pass value to ref int arguments
-
-def int inc(ref int $n) {
-  ref int $t = $n;
-}
-
-def int run() {
-  inc(1);
-}

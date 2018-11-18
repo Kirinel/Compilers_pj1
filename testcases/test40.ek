@@ -1,7 +1,0 @@
-#test40: ref var initializer not variable
-
-extern int inc(ref int, ref int);
-
-def int run() {
-  ref int $a = 1;
-}

@@ -1,8 +1,0 @@
-#test26: calling undefined functions, err3
-def int run() {
-  inc($n);
-}
-
-def int inc(int $n) {
-  return $n + 1;
-}

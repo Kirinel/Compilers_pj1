@@ -2,7 +2,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../src/tools.h"
+// #include <llvm-c/Core.h>
+#include "tools.h"
+#include "../temp/bison.h"
+#include "../temp/flex.h"
+
+// parse_tree: parse the given input using Bison
+void parse_tree(char *in, Node **root_p)
+{
+	yyin = fopen(in, "r");
+
+  if (yyin == NULL) {
+    puts("Error: No input files given");
+    exit(-1);
+  }
+
+	fseek(yyin, 0L, SEEK_END);
+	int sz = ftell(yyin);
+	if (sz < 1) {
+		fprintf(stderr, "Error: Input file cannot be empty!\n");
+		return;
+	}
+	fseek(yyin, 0L, SEEK_SET);
+
+	/* parse the given source file */
+	int err = yyparse(root_p);
+	if (err != 0)	{
+		fprintf(stderr, "Error: Wrong Syntax!\n");
+		exit(-1);
+	}
+
+	return;
+}
 
 
 int main(int argc, char *argv[]) {
@@ -84,18 +115,18 @@ int main(int argc, char *argv[]) {
 	}
 
 	//Generate the tree on the stack
-	node *root;
+	Node *root;
 	parse_tree(inf, &root);
-
+	// fill_exp_type(root);
 	process_tree(root);
 
 	if (astflag)
 		emit_ast(inf, outf, root);
 	else
-		printf("Exiting the Program...\n");
+	printf("Exiting the Program...\n");
 
 	/* House Keeping */
-	free_node(root);
+	free_ast(root);
 
 	// Exit
 	return 0;
