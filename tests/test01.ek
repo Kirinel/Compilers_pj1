@@ -1,14 +1,26 @@
-def int inc(int $n) {
-  return 0;
+extern int getarg(int);
+extern float getargf(int);
+
+def void inc(noalias ref int $n, noalias ref int $b) {
+  $n = $n + 1;
+  $b = $b + 1;
+  print $n;
 }
 
 def int run() {
-  int $a = 3 + 4;
-  ref int $b = $a;
-  $b = $b + 1;
-  int $c = 5;
-  $a = $a + $c;
-  print "Welcome to walkure world!";
-  print $b;
+  int $a = 1;
+  int $b = 1;
+  if ($a > 0)
+    $a = $a * 2;
+  else
+    $a = 0;
+
+  #inc($a);
+  inc($a, $a);
+  int $c = getarg(2);
+  print $c;
+
+  #print "Welcome to walkure world!";
+  #print $a;
   return 7 + 8;
 }
