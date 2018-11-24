@@ -1,0 +1,228 @@
+extern int getarg(int);
+extern float getargf(int);
+extern int sushi(int, int);
+extern sfloat ramen(noalias ref float, noalias ref float);
+
+def void inc(ref int $a) {
+  $a = $a + 1;
+}
+
+def float div2(float $f) {
+  return $f / 2;
+}
+
+def float fsum(float $a, float $b) {
+  return $a + $b;
+}
+
+def int iftest1(int $n) {
+  if ($n == 0)
+    return 0;
+  else
+    if ($n>0)
+      return 1;
+    else
+      return -1;
+}
+
+def void iftest2(noalias ref float $a, noalias ref float $b) {
+  if ($a > $b)
+    $a = $a - $b;
+  else
+    $b = $b - $a;
+}
+
+def void whiletest(ref int $n) {
+  while ($n > 0)
+    $n = $n - 1;
+}
+
+def int run() {
+  #Program starts
+  print "Test starts, wowwww...";
+  print "";
+
+  #Program starts with run
+  print "1. program starts with run";
+  print "okay -- 5pts (5/100)";
+  print "";
+
+  #print statements
+  print "2. print statements";
+  int $a = 1;
+  print $a;
+  float $fa = 5.0;
+  print $fa;
+  print "okay -- 5pts (10/100)";
+  print "";
+
+  #extern function declarations
+  print "3. extern function declarations";
+  int $c1 = getarg(0);
+  print $c1;
+  float $c2 = getargf(1);
+  print $c2;
+  int $c3 = getarg(0) + getarg(1) + getargf(2);
+  print $c3;
+  print "okay -- 10pts (20/100)";
+  print "";
+
+  #ref types - local variables
+  print "4. ref types - local variables";
+  print $a;
+  print "1 increases by 1 is";
+  ref int $b = $a;
+  $b = $b + 1;
+  print $a;
+  print $fa;
+  print "5 multiplied by 2 is";
+  ref float $fb = $fa;
+  $fb = $fb * 2;
+  print $fa;
+  print "okay -- 10pts (30/100)";
+  print "";
+
+  #ref types - function parameters
+  print "5. ref types - function parameters";
+  int $c = 0;
+  print "0 increases by 2 (call @inc two times) is";
+  inc($c);
+  inc($c);
+  print $c;
+  print "okay -- 5pts (35/100)";
+  print "";
+
+  #Function Calls
+  print "6. Function calls";
+  print "okay -- 5pts (40/100)";
+  print "";
+
+  #Return statements
+  print "7. Return statements";
+  float $d = 5;
+  print $d;
+  print "5 divided by 2 is (calling div2)";
+  float $e = div2($d);
+  print $e;
+  print "okay -- 5pts (45/100)";
+  print "";
+
+  #Expression statements and expressions (except comparisons) - integer types
+  print "8. Integer operations";
+  int $g = 2 + 3 * 4;
+  print "g is";
+  print $g;
+  int $h = -1 * -2 / 0.5;
+  print "h is";
+  print $h;
+  int $gand0 = $g && 0;
+  print "g and 0 is:";
+  print $gand0;
+  int $hor0 = $h || 0;
+  print "h or 0 is:";
+  print $hor0;
+  int $notg = !$g;
+  print "not g is:";
+  print $notg;
+  int $minush = -$h;
+  print "minus h is:";
+  print $minush;
+  print "okay -- 10pts (55/100)";
+  print "";
+
+  #Expression statements and expressions (except comparisons) - floating-point types
+  print "9. floating point operations";
+  float $i = 3 * 1.5;
+  print "i is";
+  print $i;
+  float $j = -15.5 / 5;
+  print "j is";
+  print $j;
+  print "i - j is";
+  print $i - $j;
+  print "i * j is";
+  print $i * $j;
+  int $iand0 = $i && 0.0;
+  print "i and 0.0 is";
+  print $iand0;
+  int $jor0 = $j || 0.0;
+  print "j or 0.0 is";
+  print $jor0;
+  int $noti = !$i;
+  print "not i is";
+  print $noti;
+  float $minusj = -$j;
+  print "minus j is";
+  print $minusj;
+  print "okay -- 10pts (65/100)";
+  print "";
+
+  #if statements
+  print "10. if/else statements";
+  int $k = 5;
+  int $l = -6;
+  int $ll = 0;
+  print iftest1($k);
+  print iftest1($l);
+  print iftest1($ll);
+  float $m = 7;
+  float $n = 5;
+  iftest2($m, $n);
+  iftest2($m, $n);
+  print $m;
+  print $n;
+  print "okay -- 5pts (70/100)";
+  print "";
+
+  #while statements
+  print "11. while statements";
+  int $o = 10;
+  whiletest($o);
+  print $o;
+  print "okay -- 5pts (75/100)";
+  print "";
+
+  #block statements
+  print "12. block statements";
+  int $p = 10;
+  print $p;
+  {
+    ref int $q = $p;
+    $q = $q - 2;
+    $q = $q - 2;
+  }
+  print $p;
+  print "okay -- 5pts (80/100)";
+  print "";
+  print "13. assign statements";
+  print "okay -- 5pts (85/100)";
+  print "";
+
+  print "14. noalias ref type";
+  print "okay -- 5pts (90/100)";
+  print "";
+
+  #integer comparisons
+  print "15. integer comparison expressions";
+  int $x = 1;
+  int $y = 6;
+  int $z = -1;
+  int $w = -5;
+  print ($x < $y) && ($z < $w);
+  print ($x > $y) || ($z > $w);
+  print "okay -- 5pts (95/100)";
+  print "";
+
+  #float point number comparisons
+  print "16. floating-point comparison expressions";
+  float $fx = 0.7;
+  float $fy = 0.7777;
+  float $fw = 0.543784;
+  float $fz = 0.43782412;
+  print ($fx < $fy) && ($fz < $fw);
+  print ($fx > $fy) || ($fz > $fw);
+  print "okay -- 5pts (100/100)";
+  print "";
+
+  return 0;
+}

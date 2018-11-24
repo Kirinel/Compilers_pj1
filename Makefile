@@ -30,10 +30,6 @@ llvm_obj= llvm.o
 # The Executable
 exe= bin/ekcc
 
-SOURCE_LLVM= src/llvm.c
-#= $(filter-out llvm.o, $(wildcard *.o))
-OBJECT_LLVM= llvm.o
-
 ################################################################################
 # Commands
 ################################################################################
@@ -59,20 +55,24 @@ llvm.o:	$(llvm_src)
 
 main: $(obj) $(tmp_obj) $(llvm_obj)
 	${LD} ${LDFLAGS} -o bin/ekcc $(obj) $(tmp_obj) $(llvm_obj)
-	rm -f $(obj) $(tmp_obj) $(llvm_obj)
+	rm -f $(obj) $(tmp_obj) $(llvm_obj) $(temp)
 
 ################################################################################
 # Tests
 ################################################################################
 test1:
-	$(exe) -emit-ast -o ./tests/test91.yaml ./tests/test91.ek
+	$(exe) -emit-llvm -jit -o ./tests/test91.ll ./tests/test91.ek 1 2 3
 test2:
-	$(exe) -emit-ast -o ./tests/test92.yaml ./tests/test92.ek
+	$(exe) -emit-llvm -jit -o ./tests/test92.ll ./tests/test92.ek 1 2 3
 ctest1:
-	$(exe) -emit-ast -o ./tests/test01.yaml ./tests/test01.ek
+	$(exe) -emit-llvm -jit -o ./tests/test01.yaml ./tests/test01.ek 1 2 3
+ctest2:
+	$(exe) -emit-llvm -jit -o ./tests/test02.ll ./tests/test02.ek 1 2 3
+ctest1-O:
+	$(exe) -O -emit-llvm -jit -o ./tests/test01.ll ./tests/test01.ek 1 2
 
 ################################################################################
 # Housekeeping
 ################################################################################
 clean:
-	rm -f $(exe) ./testcases/*.yaml ./testcases/*.ast $(temp)
+	rm -f $(exe) ./testcases/*.yaml ./testcases/*.ast

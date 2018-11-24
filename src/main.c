@@ -43,10 +43,10 @@ int main(int argc, char *argv[]) {
 	extern int opterr;
 	extern int optopt;
 
-	int c, hflag=0, vflag=0, Oflag=0, llvmflag=0, astflag=0, outflag=0;
-	char *inf=argv[argc-1], *outf=NULL;
+	int c, hflag=0, vflag=0, Oflag=0, llvmflag=0, astflag=0, outflag=0, jitflag=0;
+	char *inf=NULL, *outf=NULL;
 
-	while ((c = getopt(argc, argv, "h?vOe:o:")) != -1) {
+	while ((c = getopt(argc, argv, "h?vOe:o:j:")) != -1) {
 		switch (c) {
 			//printf("optind: %d\n", optind);
 			case 'h':
@@ -68,9 +68,15 @@ int main(int argc, char *argv[]) {
 					//printf("activated\n");
 				}
 				break;
+			case 'j':
+				if (!strcmp(optarg, "it"))
+					jitflag = 1;
+				break;
 			case 'o':
 				outflag = 1;
 				outf = optarg;
+				inf = argv[optind];
+				// printf("%d %s %s\n", optind, argv[optind-1], argv[optind]);
 				break;
 			default:
 				printf("Unknown Option: %c", (char) optopt);
@@ -78,6 +84,20 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	// Generate the commandline arguments
+	double *cl_args = NULL;
+	int len_args = argc-optind-1;
+	for (int i=0; i<len_args; ++i) {
+			cl_args = realloc(cl_args, (i+1)*sizeof(double));
+			cl_args[i] = atof(argv[i+optind+1]);
+	}
+
+	// check the commadline arguments are generated correctly
+	// for (int i=0; i<len_args; ++i) {
+	// 	printf("%f\n", cl_args[i]);
+	// }
+
+	// printf("args: %d, %s, total:%d\n", optind, argv[optind], argc);
 	//printf("%s %s\n", inf, outf);
 
 	if (hflag) {
@@ -99,10 +119,10 @@ int main(int argc, char *argv[]) {
 		printf("Verbose mode is currently disabled.\n");
 
 	if (Oflag)
-		printf("Optimization is currently disabled.\n");
+		printf("Optimization (level 3) is enabled.\n");
 
 	if (llvmflag)
-		printf("llvm mode is currently disabled.\n");
+		printf("Exporting LLVM IR......\n");
 
 	if (!outflag) {
 		fprintf(stderr, "\nError: The output filename must be specified!\nExiting the program...\n");
@@ -117,16 +137,30 @@ int main(int argc, char *argv[]) {
 	//Generate the tree on the stack
 	Node *root;
 	parse_tree(inf, &root);
-	// fill_exp_type(root);
 	process_tree(root);
 
+	// emit ast
 	if (astflag)
 		emit_ast(inf, outf, root);
+
+	// emit llvm
+	if (jitflag)
+		// emit llvm
+		if (llvmflag)
+			// Compile the whole program
+			compile_llvm(root, outf, 1, Oflag, cl_args, len_args);
+		else
+			compile_llvm(root, "test.ll", 0, Oflag, cl_args, len_args);
 	else
-	printf("Exiting the Program...\n");
+		fprintf(stderr, "Warning: only jit option is enabled for this program.\n");
+
+
 
 	/* House Keeping */
 	free_ast(root);
+	free(cl_args);
+
+	printf("Exiting the Program...\n");
 
 	// Exit
 	return 0;

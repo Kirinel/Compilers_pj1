@@ -617,9 +617,6 @@ void process_tree(Node *root)
 	// Fill the exps with expression tags
 	fill_exp_type(root, f_table, &v_table);
 
-	// Compile the whole program
-	compile_llvm(root, "test.ll", 0);
-
 	// Load the expression tree
 	free_func_table(f_table);
 
