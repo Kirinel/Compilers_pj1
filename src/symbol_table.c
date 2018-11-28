@@ -85,7 +85,7 @@ void free_var_table(VAR_table *t)
  *    next: The next local variable entry.
  */
 VAR_entry *new_var_entry(hash_t hast_code, size_t var_id, char *varname,
-                          enum type_tag vartype, double varval, VAR_entry *ref, Node *vdecl)
+                          enum type_tag vartype, double varval, VAR_entry *ref, Node *vdecl, unsigned int level)
 {
   VAR_entry *entry = calloc(1, sizeof(VAR_entry));
   entry->hash_code = hast_code;
@@ -98,6 +98,7 @@ VAR_entry *new_var_entry(hash_t hast_code, size_t var_id, char *varname,
   // entry->noalias_ref = NULL;
   // No need to assign this at initiation
   entry->vdecl = vdecl;
+  entry->level = level;
   // next defaults to NULL
   return entry;
 }
@@ -112,7 +113,7 @@ VAR_entry *new_var_entry(hash_t hast_code, size_t var_id, char *varname,
  *  returns:
  *    an error code (values other than 0 are abnormal executions).
  */
-int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname, double varval)
+int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname, double varval, unsigned int level)
 {
   // NULL table pointer, return error
   if (t==NULL)  return P_NULL;
@@ -123,7 +124,7 @@ int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname,
   // search the referenc node
   VAR_entry *ref_node = NULL;
   if (refname != NULL) {
-    assert( find_local_var(t, varname, &ref_node) == SUCCESS );
+    assert( find_local_var(t, varname, &ref_node, level) == SUCCESS );
   }
 
   // Hash the varname and find the target bucket, assign the head pointer
@@ -133,25 +134,25 @@ int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname,
 
   // If head pointer is NULL, insert at head pointer
   if (curr == NULL) {
-    t->bucs[target_buc] = new_var_entry(hash_value, ++t->num_vars, varname, vartype, varval, ref_node, vdecl);
+    t->bucs[target_buc] = new_var_entry(hash_value, ++t->num_vars, varname, vartype, varval, ref_node, vdecl, level);
     return SUCCESS;
   }
 
   while (curr->next != NULL) {
     //check duplicate varnames, return an error code if the variable has already been declared in the hash table.
-    if (!strcmp(curr->varname, varname)) {
+    if (!strcmp(curr->varname, varname) && curr->level==level) {
       return VAR_DUP;
     }
     curr = curr->next;
   }
 
   //check duplicate varnames
-  if (!strcmp(curr->varname, varname)) {
-    //fprintf(stderr, "error: local variable (%s) has already been declared.\n", name);
+  if (!strcmp(curr->varname, varname) && curr->level==level) {
+    // fprintf(stderr, "error: local variable (%s) has already been declared.\n", name);
     return VAR_DUP;
   }
   //find the last case and insert;
-  curr->next = new_var_entry(hash_value, ++t->num_vars, varname, vartype, varval, ref_node, vdecl);
+  curr->next = new_var_entry(hash_value, ++t->num_vars, varname, vartype, varval, ref_node, vdecl, level);
   return SUCCESS;
 }
 
@@ -163,24 +164,28 @@ int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname,
  *  returns:
  *    error code: nonzero values signify failure
  */
-int find_local_var(VAR_table *t, char *varname, VAR_entry **entry_p)
+int find_local_var(VAR_table *t, char *varname, VAR_entry **entry_p, unsigned int level)
 {
  //find the bucket
  hash_t hash_value = hash(varname);
  size_t target_buc = hash_value % t->num_bucs;
- //start iterating to find the entry
- VAR_entry *curr = t->bucs[target_buc];
 
- if (curr == NULL) return NOT_FOUND;
+ for (int l=level; l>=0; --l) {
+   //start iterating to find the entry
+   VAR_entry *curr = t->bucs[target_buc];
 
- while (curr != NULL) {
-   //check duplicate globids
-   if (!strcmp(curr->varname, varname)) {
-     *entry_p = curr;
-     return SUCCESS;
+   if (curr == NULL) return NOT_FOUND;
+
+   while (curr != NULL) {
+     //check duplicate globids
+     // printf("%s %d %s %d\n", varname, l, `curr->varname, curr->level);
+     if (!strcmp(curr->varname, varname) && l==curr->level) {
+       *entry_p = curr;
+       return SUCCESS;
+     }
+
+     curr = curr->next;
    }
-
-   curr = curr->next;
  }
 
  return NOT_FOUND;
@@ -323,7 +328,7 @@ int find_func(FUNC_table *t, char *funcname, FUNC_entry **entry_p)
   //start iterating to find the entry
   FUNC_entry *curr = t->bucs[target_buc];
 
-  if (curr == NULL) return P_NULL;
+  if (curr == NULL) return NOT_FOUND;
 
   while (curr != NULL) {
     //check duplicate globids
@@ -336,4 +341,49 @@ int find_func(FUNC_table *t, char *funcname, FUNC_entry **entry_p)
   }
 
   return NOT_FOUND;
+}
+
+/* Free the variables by each level
+ *  t: the pointer to the variable table
+ *  level: the level of the variables
+ */
+void delete_var_bylevel(VAR_table *t, unsigned int level) {
+  // printf("free %d\n", level);
+  VAR_entry *curr=NULL, *tmp=NULL;
+
+  for (size_t i=0; i<t->num_bucs; ++i) {
+    curr = t->bucs[i];
+    // skip empty bucket, continue
+    if (curr == NULL) continue;
+
+    // free the first entry iteratively
+    while (curr != NULL && curr->level == level) {
+      // destroy
+      t->bucs[i] = curr->next;
+      free(curr->varname);
+      free(curr);
+      curr = t->bucs[i];
+    }
+
+    // if nothing is left, continue
+    if (curr == NULL || curr->next == NULL) continue;
+
+    // proceed with one unit
+    curr = curr->next;
+
+    while (curr->next != NULL) {
+      // check the variable to get destroyed
+      if (curr->level == level) {
+        // Destroy
+        tmp = curr->next;
+        curr->next = curr->next->next;
+        free(tmp->varname);
+        free(tmp);
+      } else {
+        curr = curr->next;
+      }
+    }
+    // End of one iteration
+  }
+  // End of function
 }

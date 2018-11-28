@@ -31,7 +31,7 @@ void emit_ast(char *in, char *out, Node *rootnode)
  *		returns:
  *			the (value) type of the node (as enum exp_type)
  */
-enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
+enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt, unsigned int l)
 {
 	if (n==NULL) return UNDEF;
 
@@ -39,69 +39,75 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
 	FUNC_entry *fent = NULL;
 	enum exp_type type_l, type_r;
 	int err;
+	char *varname = NULL;
 
   switch (n->tag) {
     case T_PROG:
-      fill_exp_type(n->node_prog.funcs, ft, vt);
+      fill_exp_type(n->node_prog.funcs, ft, vt, l);
       return 0;
 
     case T_FUNCS:
-      fill_exp_type(n->node_funcs.left, ft, vt);
+      fill_exp_type(n->node_funcs.left, ft, vt, l);
       if (n->node_funcs.right != NULL)
-        fill_exp_type(n->node_funcs.right, ft, vt);
+        fill_exp_type(n->node_funcs.right, ft, vt, l);
       return 0;
 
     case T_FUNC:
 			assert( find_func(ft, n->node_func.globid->node_globid.funcname, &fent) == 0);
 			*vt = fent->local_vars;
-      fill_exp_type(n->node_func.blk, ft, vt);
+      fill_exp_type(n->node_func.blk, ft, vt, l);
       return 0;
 
     case T_BLK:
       if (n->node_blk.stmts != NULL) {
-        fill_exp_type(n->node_blk.stmts, ft, vt);
+        fill_exp_type(n->node_blk.stmts, ft, vt, l);
       }
       return 0;
 
     case T_STMTS:
-      fill_exp_type(n->node_stmts.left, ft, vt);
+      fill_exp_type(n->node_stmts.left, ft, vt, l);
       if (n->node_stmts.right != NULL)
-        fill_exp_type(n->node_stmts.right, ft, vt);
+        fill_exp_type(n->node_stmts.right, ft, vt, l);
       return 0;
 
     case T_STMT:
-      fill_exp_type(n->node_stmt.oc_stmt, ft, vt);
+      fill_exp_type(n->node_stmt.oc_stmt, ft, vt, l);
       return 0;
 
     case T_OPEN_STMT:
     case T_CLOSED_STMT:
-      fill_exp_type(n->node_open_stmt.exp, ft, vt);
-      fill_exp_type(n->node_open_stmt.stmt1, ft, vt);
+      fill_exp_type(n->node_open_stmt.exp, ft, vt, l);
+      fill_exp_type(n->node_open_stmt.stmt1, ft, vt, l);
       if (n->node_open_stmt.stmt2 != NULL)
-        fill_exp_type(n->node_open_stmt.stmt2, ft, vt);
+        fill_exp_type(n->node_open_stmt.stmt2, ft, vt, l);
       return 0;
 
     case T_SIMPLE_STMT:
       switch (n->node_simple_stmt.simple_stmt_tag) {
         case STMT_BLK:
-          fill_exp_type(n->node_simple_stmt.blk, ft, vt);
+					// printf("activated at level %d\n", l+1);
+          fill_exp_type(n->node_simple_stmt.blk, ft, vt, l+1);
+					delete_var_bylevel(*vt, l+1);
+					// printf("freed at level %d\n", l+1);
           break;
 
         case STMT_RETURN_VOID:
           break;
 
         case STMT_VARDECL:
+					varname = n->node_simple_stmt.vdecl->node_vdecl.var->node_var.varname;
+					add_table_local_var(*vt, varname, n->node_simple_stmt.vdecl, NULL, 0, l);
           // type_to_exptype(n->node_simple_stmt.vdecl->node_vdecl.type);
-					fill_exp_type(n->node_simple_stmt.exp, ft, vt);
+					fill_exp_type(n->node_simple_stmt.exp, ft, vt, l);
           break;
 
         case STMT_RETURN:
         case STMT_EXPSTMT:
         case STMT_PRINT:
-          fill_exp_type(n->node_simple_stmt.exp, ft, vt);
+          fill_exp_type(n->node_simple_stmt.exp, ft, vt, l);
           break;
         case STMT_PRINTSLIT:
-          fill_exp_type(n->node_simple_stmt.slit, ft, vt);
+          fill_exp_type(n->node_simple_stmt.slit, ft, vt, l);
           break;
       }
       return 0;
@@ -113,23 +119,23 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
     case T_EXP:
       switch (n->node_exp.exp_tag) {
         case EXP_EXP:
-          n->node_exp.exp_type = fill_exp_type(n->node_exp.exp, ft, vt);
+          n->node_exp.exp_type = fill_exp_type(n->node_exp.exp, ft, vt, l);
           break;
 
         case EXP_BINOP:
-          n->node_exp.exp_type = fill_exp_type(n->node_exp.binop, ft, vt);
+          n->node_exp.exp_type = fill_exp_type(n->node_exp.binop, ft, vt, l);
           break;
 
         case EXP_UOP:
-          n->node_exp.exp_type = fill_exp_type(n->node_exp.uop, ft, vt);
+          n->node_exp.exp_type = fill_exp_type(n->node_exp.uop, ft, vt, l);
           break;
 
         case EXP_LIT:
-          n->node_exp.exp_type = fill_exp_type(n->node_exp.lit, ft, vt);
+          n->node_exp.exp_type = fill_exp_type(n->node_exp.lit, ft, vt, l);
           break;
 
         case EXP_VAR:
-          n->node_exp.exp_type = fill_exp_type(n->node_exp.var, ft, vt);
+          n->node_exp.exp_type = fill_exp_type(n->node_exp.var, ft, vt, l);
           break;
 
         case EXP_GLOBID:
@@ -145,7 +151,7 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
 					n->node_exp.exp_type = fent->ret_type;
 
 					// recurse <exps>
-					fill_exp_type(n->node_exp.exps, ft, vt);
+					fill_exp_type(n->node_exp.exps, ft, vt, l);
 
 					break;
       }
@@ -155,8 +161,8 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
     case T_BINOP:
 			switch (n->node_binop.op) {
 				case BINOP_ASSIGN:
-					fill_exp_type(n->node_binop.var, ft, vt);
-					n->node_binop.exp_type = fill_exp_type(n->node_binop.exp_right, ft, vt);
+					fill_exp_type(n->node_binop.var, ft, vt, l);
+					n->node_binop.exp_type = fill_exp_type(n->node_binop.exp_right, ft, vt, l);
 					break;
 
 				case BINOP_ADD:
@@ -165,8 +171,8 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
 				case BINOP_DIV:
 
 					// generate the left and right hand type
-					type_r = fill_exp_type(n->node_binop.exp_right, ft, vt);
-					type_l = fill_exp_type(n->node_binop.exp_left, ft, vt);
+					type_r = fill_exp_type(n->node_binop.exp_right, ft, vt, l);
+					type_l = fill_exp_type(n->node_binop.exp_left, ft, vt, l);
 
 					// apply promotion rules
 					if (type_l == FLOAT || type_r == FLOAT) {
@@ -191,8 +197,8 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
 				default:
 
 					// generate the left and right hand type
-					type_r = fill_exp_type(n->node_binop.exp_right, ft, vt);
-					type_l = fill_exp_type(n->node_binop.exp_left, ft, vt);
+					type_r = fill_exp_type(n->node_binop.exp_right, ft, vt, l);
+					type_l = fill_exp_type(n->node_binop.exp_left, ft, vt, l);
 
 					// apply promotion rules
 					if (type_l == FLOAT || type_r == FLOAT) {
@@ -219,9 +225,9 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
 
 		case T_UOP:
 			if (n->node_uop.op == UOP_MINUS) {
-				n->node_uop.exp_type = fill_exp_type(n->node_uop.exp, ft, vt);
+				n->node_uop.exp_type = fill_exp_type(n->node_uop.exp, ft, vt, l);
 			} else {
-				fill_exp_type(n->node_uop.exp, ft, vt);
+				fill_exp_type(n->node_uop.exp, ft, vt, l);
 				n->node_uop.exp_type = INT;
 			}
 
@@ -230,13 +236,14 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
 		case T_EXPS:
 
 			// recurse
-			fill_exp_type(n->node_exps.left, ft, vt);
-			if (n->node_exps.right != NULL) fill_exp_type(n->node_exps.right, ft, vt);
+			fill_exp_type(n->node_exps.left, ft, vt, l);
+			if (n->node_exps.right != NULL) fill_exp_type(n->node_exps.right, ft, vt, l);
 
 			break;
 
 		case T_LIT:
 			if (n->node_lit.lit_type == LIT) {
+				// Defaults to CINT
 				n->node_lit.exp_type = INT;
 			} else {
 				n->node_lit.exp_type = FLOAT;
@@ -245,7 +252,8 @@ enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt)
 			return n->node_lit.exp_type;
 
 		case T_VAR:
-			err = find_local_var(*vt, n->node_var.varname, &vent);
+			// printf("%s %d\n", n->node_var.varname, l);
+			err = find_local_var(*vt, n->node_var.varname, &vent, l);
 			if (err == NOT_FOUND) {
 				fprintf(stderr, "error: local variable (%s) is not defined (code: 008).\n", n->node_var.varname);
 			} else if (err) {
@@ -307,7 +315,7 @@ void scan_AST(FUNC_table *t, Node *n)
 			// Step3: Load the arguments into the variable table
 			scan_args(vt, n->node_func.vdecls);
 			// Scan through the *blk* of the function
-			scan_fblk(t, vt, n->node_func.blk);
+			scan_fblk(t, vt, n->node_func.blk, 0);
 			break;
 
 		default:
@@ -377,7 +385,7 @@ void verify_vdecl(Node *n)
 	assert(n->tag == T_VDECL);
 
 	Node *ttype = n->node_vdecl.type;
-	if (ttype->node_type.type_tag == VOID) {
+	if (ttype->node_type.type_tag == TYPE_VOID) {
 		fprintf(stderr, "error: variable (%s) cannot be declared with type [void] (code: 001).\n", n->node_vdecl.var->node_var.varname);
 		exit(VDECL_NO_REF);
 	}
@@ -386,7 +394,7 @@ void verify_vdecl(Node *n)
 }
 
 /* verify_vdeclstmt: verify the given node <vdeclstmt> is valid*/
-void verify_vdeclstmt(Node *n, VAR_table *t)
+void verify_vdeclstmt(Node *n, VAR_table *t, unsigned int level)
 {
 	int err = 0;
 	assert(n->node_simple_stmt.simple_stmt_tag == STMT_VARDECL);
@@ -409,7 +417,10 @@ void verify_vdeclstmt(Node *n, VAR_table *t)
 		Node *var = exp->node_exp.var;
 
 		// verify the variable at the right hand side exits in variable table.
-		err = find_local_var(t, var->node_var.varname, &var_ent);
+		err = find_local_var(t, var->node_var.varname, &var_ent, level);
+
+		// printf("%s %d\n", var->node_var.varname, level);
+
 		if (err == NOT_FOUND) {
 			fprintf(stderr, "error: local variable (%s) is not defined (code: 008).\n", var->node_var.varname);
 			exit(NOT_FOUND);
@@ -465,7 +476,7 @@ void scan_args(VAR_table *t, Node *n)
 		case T_VDECL:
 			verify_vdecl(n);
 			varname = n->node_vdecl.var->node_var.varname;
-			if (add_table_local_var(t, varname, n, NULL, 0) == VAR_DUP) {
+			if (add_table_local_var(t, varname, n, NULL, 0, 0) == VAR_DUP) {
 				fprintf(stderr, "error: local variable (%s) in function (%s) has already been declared (code: 011).\n", varname, t->func_name);
 				exit(VAR_DUP);
 			}
@@ -484,7 +495,7 @@ void scan_args(VAR_table *t, Node *n)
  * purpose: load local variables into the table
  *					and filter invalid function calls
  */
-void scan_fblk(FUNC_table *ft, VAR_table *vt, Node *n)
+void scan_fblk(FUNC_table *ft, VAR_table *vt, Node *n, unsigned int level)
 {
 	if (n==NULL)	return;
 
@@ -494,48 +505,57 @@ void scan_fblk(FUNC_table *ft, VAR_table *vt, Node *n)
 
 	switch (n->tag) {
 		case T_BLK:
-			scan_fblk(ft, vt, n->node_blk.stmts);
+			scan_fblk(ft, vt, n->node_blk.stmts, level);
 			break;
 
 		case T_STMTS:
-			scan_fblk(ft, vt, n->node_stmts.left);
-			scan_fblk(ft, vt, n->node_stmts.right);
+			scan_fblk(ft, vt, n->node_stmts.left, level);
+			scan_fblk(ft, vt, n->node_stmts.right, level);
 			break;
 
 		case T_STMT:
-			scan_fblk(ft, vt, n->node_stmt.oc_stmt);
+			scan_fblk(ft, vt, n->node_stmt.oc_stmt, level);
 			break;
 
 		case T_OPEN_STMT:
-			scan_fblk(ft, vt, n->node_open_stmt.exp);
-			scan_fblk(ft, vt, n->node_open_stmt.stmt1);
-			scan_fblk(ft, vt, n->node_open_stmt.stmt2);
+			scan_fblk(ft, vt, n->node_open_stmt.exp, level);
+			scan_fblk(ft, vt, n->node_open_stmt.stmt1, level);
+			scan_fblk(ft, vt, n->node_open_stmt.stmt2, level);
 			break;
 
 		case T_CLOSED_STMT:
-			scan_fblk(ft, vt, n->node_closed_stmt.exp);
-			scan_fblk(ft, vt, n->node_closed_stmt.stmt1);
-			scan_fblk(ft, vt, n->node_closed_stmt.stmt2);
+			scan_fblk(ft, vt, n->node_closed_stmt.exp, level);
+			scan_fblk(ft, vt, n->node_closed_stmt.stmt1, level);
+			scan_fblk(ft, vt, n->node_closed_stmt.stmt2, level);
 			break;
 
 		case T_SIMPLE_STMT:
 
 			// Check if it is a vardeclstmt
 			if (n->node_simple_stmt.simple_stmt_tag == STMT_VARDECL) {
-				verify_vdeclstmt(n, vt);
+				verify_vdeclstmt(n, vt, level);
+				char *varname = n->node_simple_stmt.vdecl->node_vdecl.var->node_var.varname;
 				// Add local variable
 				// printf("%s added\n", n->node_simple_stmt.vdecl->node_vdecl.var->node_var.varname);
 
-				add_table_local_var(vt, n->node_simple_stmt.vdecl->node_vdecl.var->node_var.varname, n->node_simple_stmt.vdecl, NULL, 0);
+				int err = add_table_local_var(vt, varname, n->node_simple_stmt.vdecl, NULL, 0, level);
+				if (err == VAR_DUP) {
+					fprintf(stderr, "error: local variable (%s) has already been declared (code: 011).\n", varname);
+					exit(VAR_DUP);
+				}
 			}
-			scan_fblk(ft, vt, n->node_simple_stmt.blk);
-			scan_fblk(ft, vt, n->node_simple_stmt.exp);
-			scan_fblk(ft, vt, n->node_simple_stmt.slit);
+			if (n->node_simple_stmt.blk != NULL) {
+				// printf("activated, level:%d\n",level);
+				scan_fblk(ft, vt, n->node_simple_stmt.blk, level+1);
+				delete_var_bylevel(vt, level+1);
+			}
+			scan_fblk(ft, vt, n->node_simple_stmt.exp, level);
+			scan_fblk(ft, vt, n->node_simple_stmt.slit, level);
 			break;
 
 		case T_EXPS:
-			scan_fblk(ft, vt, n->node_exps.left);
-			scan_fblk(ft, vt, n->node_exps.right);
+			scan_fblk(ft, vt, n->node_exps.left, level);
+			scan_fblk(ft, vt, n->node_exps.right, level);
 			break;
 
 		case T_EXP:
@@ -557,12 +577,12 @@ void scan_fblk(FUNC_table *ft, VAR_table *vt, Node *n)
 					err = check_call_args(ent->func_node->tdecls, n->right);
 				}*/
 			}
-			scan_fblk(ft, vt, n->node_exp.exp);
-			scan_fblk(ft, vt, n->node_exp.binop);
-			scan_fblk(ft, vt, n->node_exp.uop);
-			scan_fblk(ft, vt, n->node_exp.lit);
-			scan_fblk(ft, vt, n->node_exp.var);
-			scan_fblk(ft, vt, n->node_exp.exps);
+			scan_fblk(ft, vt, n->node_exp.exp, level);
+			scan_fblk(ft, vt, n->node_exp.binop, level);
+			scan_fblk(ft, vt, n->node_exp.uop, level);
+			scan_fblk(ft, vt, n->node_exp.lit, level);
+			scan_fblk(ft, vt, n->node_exp.var, level);
+			scan_fblk(ft, vt, n->node_exp.exps, level);
 			break;
 
 		case T_SLIT:
@@ -615,7 +635,7 @@ void process_tree(Node *root)
 	//Check if the run function exists and has the correct return type;
 	check_run(f_table);
 	// Fill the exps with expression tags
-	fill_exp_type(root, f_table, &v_table);
+	fill_exp_type(root, f_table, &v_table, 0);
 
 	// Load the expression tree
 	free_func_table(f_table);

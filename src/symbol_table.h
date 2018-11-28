@@ -33,6 +33,7 @@ typedef struct var_entry {
   struct var_entry *ref; // The target variable being referenced
   struct var_entry *noalias_ref; // The noalias_ref variable to this variable
   Node *vdecl; // The node when the variable get declared
+  unsigned int level; // The scope of the variable
   struct var_entry *next; // The next variable
 } VAR_entry;
 
@@ -76,7 +77,7 @@ void free_var_table(VAR_table *t);
  *    next: The next local variable entry.
  */
  VAR_entry *new_var_entry(hash_t hast_code, size_t var_id, char *varname,
-                           enum type_tag vartype, double varval, VAR_entry *ref, Node *vdecl);
+                           enum type_tag vartype, double varval, VAR_entry *ref, Node *vdecl, unsigned int level);
 /* add_table_local_var: Add the local variable to the variable table
 *  args:
 *    t: the pointer to the variable table
@@ -87,7 +88,7 @@ void free_var_table(VAR_table *t);
 *  returns:
 *    an error code (values other than 0 are abnormal executions).
 */
-int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname, double varval);
+int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname, double varval, unsigned int level);
 /* find_local_var: Find the local variable with the given variable name
  *  args:
  *    t: The variable table
@@ -96,7 +97,14 @@ int add_table_local_var(VAR_table *t, char *varname, Node *vdecl, char *refname,
  *  returns:
  *    error code: nonzero values signify failure
  */
-int find_local_var(VAR_table *, char *, VAR_entry **);
+int find_local_var(VAR_table *, char *, VAR_entry **, unsigned int);
+
+/* Free the variables when exiting a block
+ *  t: the pointer to the variable table
+ *  level: the level of the variables to be deleted.
+ */
+void delete_var_bylevel(VAR_table *t, unsigned int level);
+
 
 /* The entry of FUNC_table
  */

@@ -108,8 +108,19 @@ target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 @print_int.101 = private unnamed_addr constant [4 x i8] c"%d\0A\00"
 @printslit_str.102 = private unnamed_addr constant [24 x i8] c"okay -- 5pts (100/100)\0A\00"
 @printslit_str.103 = private unnamed_addr constant [2 x i8] c"\0A\00"
+@printslit_str.104 = private unnamed_addr constant [15 x i8] c"Test complete\0A\00"
 
 declare i32 @printf(...)
+
+declare void @cint_negation(i32, i32*)
+
+declare void @cint_addition(i32, i32, i32*)
+
+declare void @cint_subtraction(i32, i32, i32*)
+
+declare void @cint_multiplication(i32, i32, i32*)
+
+declare void @cint_division(i32, i32, i32*)
 
 define i32 @getarg(i32) {
 entry:
@@ -724,6 +735,7 @@ entry:
   %print277 = call i32 (...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @print_int.101, i32 0, i32 0), i32 %cmp_value276)
   %printslit278 = call i32 (...) @printf(i8* getelementptr inbounds ([24 x i8], [24 x i8]* @printslit_str.102, i32 0, i32 0))
   %printslit279 = call i32 (...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @printslit_str.103, i32 0, i32 0))
+  %printslit280 = call i32 (...) @printf(i8* getelementptr inbounds ([15 x i8], [15 x i8]* @printslit_str.104, i32 0, i32 0))
   ret i32 0
 }
 

@@ -1,3 +1,6 @@
+#ifndef COMPILE_H
+#define COMPILE_H
+
 #include <llvm-c/Core.h>
 #include <llvm-c/ExecutionEngine.h>
 #include <llvm-c/Target.h>
@@ -120,3 +123,8 @@ LLVMValueRef generate_string(char *str);
 static void generate_if_statement(LLVMBuilderRef builder, Node *n, F_table *ft, V_table *vt, unsigned int level, LLVMValueRef function);
 
 static void generate_while_statement(LLVMBuilderRef builder, Node *n, F_table *ft, V_table *vt, unsigned int level, LLVMValueRef function);
+
+// Checked integer APIs
+static void init_checked_integers(LLVMModuleRef module, F_table *ft);
+
+#endif

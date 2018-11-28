@@ -1,0 +1,10 @@
+def int run() {
+  # raise addition overflow (102)
+  cint $x = 2147483640;
+  cint $y = 10;
+  cint $z = $x + $y;
+
+  print $z;
+
+  return 0;
+}

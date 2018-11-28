@@ -5,7 +5,7 @@ CC=	clang
 CFLAGS=	-Wall -g -c
 CFLAGS_LLVM= -Wall -g `llvm-config --cflags` -c
 LD=clang++
-LDFLAGS=`llvm-config --cxxflags --ldflags --libs core executionengine mcjit interpreter analysis native bitwriter --system-libs`
+LDFLAGS= -rdynamic `llvm-config --cxxflags --ldflags --libs core executionengine mcjit interpreter analysis native bitwriter --system-libs`
 
 BISON= bison
 FLEX= flex
@@ -15,7 +15,7 @@ FLEX= flex
 ################################################################################
 
 # Source codes and object files in C
-src= $(filter-out src/llvm.c, $(wildcard src/*.c))
+src= $(filter-out $(llvm_src), $(wildcard src/*.c))
 obj= $(patsubst %.c,%.o, $(notdir $(src)))
 temp= $(wildcard temp/*.*)
 # Flex and Bison source file
@@ -61,18 +61,24 @@ main: $(obj) $(tmp_obj) $(llvm_obj)
 # Tests
 ################################################################################
 test1:
-	$(exe) -emit-llvm -jit -o ./tests/test91.ll ./tests/test91.ek 1 2 3
+	$(exe) -emit-ast -jit -o ./tests/test91.yaml ./tests/test91.ek 1 2 3
 test2:
-	$(exe) -emit-llvm -jit -o ./tests/test92.ll ./tests/test92.ek 1 2 3
+	$(exe) -emit-ast -jit -o ./tests/test92.yaml ./tests/test92.ek 1 2 3
 ctest1:
-	$(exe) -emit-llvm -jit -o ./tests/test01.yaml ./tests/test01.ek 1 2 3
+	$(exe) -emit-ast -jit -o ./tests/test01.yaml ./tests/test01.ek 1 2 3
 ctest2:
 	$(exe) -emit-llvm -jit -o ./tests/test02.ll ./tests/test02.ek 1 2 3
 ctest1-O:
 	$(exe) -O -emit-llvm -jit -o ./tests/test01.ll ./tests/test01.ek 1 2
+ctest2-O:
+	$(exe) -emit-llvm -jit -O -o ./tests/test02.ll ./tests/test02.ek 1 2 3
+ctest4:
+	$(exe) -emit-llvm -jit -o ./tests/test04.ll ./tests/test04.ek
+subtest:
+	$(exe) -emit-ast -jit -o ./tests/subtest.yaml ./tests/subtest.ek
 
 ################################################################################
 # Housekeeping
 ################################################################################
 clean:
-	rm -f $(exe) ./testcases/*.yaml ./testcases/*.ast
+	rm -f $(exe) ./testcases/*.yaml ./testcases/*.ast *.o
