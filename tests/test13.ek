@@ -1,0 +1,10 @@
+def int run() {
+  # raise subtraction overflow (103)
+  cint $x = -2147483640;
+  cint $y = 20;
+  cint $z = $x - $y;
+
+  print $z;
+
+  return 0;
+}

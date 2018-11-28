@@ -142,11 +142,11 @@ funcs:
                             rhs:
                               name: uop
                               op: minus
-                              expr_type: int
+                              expr_type: undefined (0)
                               exp:
                                 name: varval
                                 var: xy
-                                expr_type: int
+                                expr_type: undefined (0)
                           rhs:
                             name: binop
                             op: lt

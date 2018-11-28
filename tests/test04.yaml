@@ -1,0 +1,55 @@
+---
+name: prog
+funcs:
+  name: funcs
+  funcs:
+    -
+      name: func
+      ret_type: int
+      globid: run
+      blk:
+        name: blk
+        contents:
+          name: stmts
+          stmts:
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: cint
+                var: x
+              exp:
+                name: uop
+                op: minus
+                expr_type: int
+                exp:
+                  name: lit
+                  value: -2147483648
+                  expr_type: int
+            -
+              name: vardeclstmt
+              vdecl:
+                node: vdecl
+                type: cint
+                var: y
+              exp:
+                name: uop
+                op: minus
+                expr_type: cint
+                exp:
+                  name: varval
+                  var: x
+                  expr_type: cint
+            -
+              name: print
+              exp:
+                name: varval
+                var: y
+                expr_type: cint
+            -
+              name: ret
+              exp:
+                name: lit
+                value: 0
+                expr_type: int
+...

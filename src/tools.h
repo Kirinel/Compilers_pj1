@@ -1,3 +1,6 @@
+#ifndef TOOLS_H
+#define TOOLS_H
+
 #include "ast.h"
 #include "symbol_table.h"
 #include "llvm.h"
@@ -22,7 +25,7 @@ void emit_ast(char *in, char *out, Node *rootnode);
  *		returns:
  *			the (value) type of the node (as enum exp_type)
  */
-enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt);
+enum exp_type fill_exp_type(Node *n, FUNC_table *ft, VAR_table **vt, unsigned int l);
 
 /* scan_AST: a recursive function to reach from *prog* to *extern* and *func*,
  * 	invokes the following helper functions.
@@ -56,7 +59,7 @@ void verify_type(Node *n);
 void verify_vdecl(Node *n);
 
 /* verify_vdeclstmt: verify the given node <vdeclstmt> is valid*/
-void verify_vdeclstmt(Node *n, VAR_table *t);
+void verify_vdeclstmt(Node *n, VAR_table *t, unsigned int level);
 
 /* scan_tdecls: scan the type declaration of external functions
  * 	args:
@@ -79,7 +82,7 @@ void scan_args(VAR_table *t, Node *n);
  * purpose: load local variables into the table
  *					and filter invalid function calls
  */
-void scan_fblk(FUNC_table *ft, VAR_table *vt, Node *n);
+void scan_fblk(FUNC_table *ft, VAR_table *vt, Node *n, unsigned int level);
 
 /* check_run: The function to find if the run function has been correctly defined.
   	raise errors and exit the program within this function.
@@ -89,3 +92,5 @@ void check_run(FUNC_table *t);
 // process_tree: The entry point of this file.
 //	will do the 6 checks needed.
 void process_tree(Node *root);
+
+#endif

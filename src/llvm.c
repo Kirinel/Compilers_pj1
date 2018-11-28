@@ -10,9 +10,11 @@
 // Optimizer
 #include <llvm-c/Transforms/PassManagerBuilder.h>
 #include <llvm-c/Transforms/Scalar.h>
+// User defined header files
 #include "llvm.h"
 #include "symbol_table.h"
 #include "compile.h"
+#include "cint.h"
 
 // #define TRUE LLVMConstInt(LLVMInt1Type(), 1, 0);
 // #define FALSE LLVMConstInt(LLVMInt1Type(), 0, 0);
@@ -226,37 +228,39 @@ int find_ventry(V_table *t, char *varname, unsigned int level, V_entry **vent) {
 }
 /* Destroy variable by level */
 void destroy_ventry_bylevel(V_table *t, unsigned int level) {
-  V_entry *curr=NULL, *prev=NULL;
+  // printf("free %d\n", level);
+  V_entry *curr=NULL, *tmp=NULL;
 
   for (size_t i=0; i<t->num_bucs; ++i) {
     curr = t->bucs[i];
-    // skip empty bucket
+    // skip empty bucket, continue
     if (curr == NULL) continue;
 
-    if (curr->level == level) {
-      while (curr != NULL && curr->level == level) {
-        // destroy
-        t->bucs[i] = curr->next;
-        free(curr->varname);
-        free(curr);
-        curr = t->bucs[i];
-      }
+    // free the first entry iteratively
+    while (curr != NULL && curr->level == level) {
+      // destroy
+      t->bucs[i] = curr->next;
+      free(curr->varname);
+      free(curr);
+      curr = t->bucs[i];
     }
 
-    // gets curr that is either NULL, or curr->level != level
-    if (curr == NULL) continue;
+    // if nothing is left, continue
+    if (curr == NULL || curr->next == NULL) continue;
+
     // proceed with one unit
-    prev = curr;
     curr = curr->next;
 
-    while (curr != NULL) {
+    while (curr->next != NULL) {
       // check the variable to get destroyed
       if (curr->level == level) {
         // Destroy
-        prev->next = curr->next;
-        free(curr->varname);
-        free(curr);
-        curr = prev->next;
+        tmp = curr->next;
+        curr->next = curr->next->next;
+        free(tmp->varname);
+        free(tmp);
+      } else {
+        curr = curr->next;
       }
     }
     // End of one iteration
@@ -293,6 +297,8 @@ void compile_llvm(Node *n, char *out,int write_to_file, int optimizer, double *c
   LLVMTypeRef PrintfTy = LLVMFunctionType(LLVMInt32Type(), PrintfArgsTyList, 0, 1);
   LLVMValueRef PrintfFunction = LLVMAddFunction(module, ppf, PrintfTy);
   add_fentry(ft, ppf, PrintfFunction, PrintfTy);
+
+  init_checked_integers(module, ft);
 
   /* Recurse into the function blocks
    */
@@ -410,6 +416,49 @@ void compile_llvm(Node *n, char *out,int write_to_file, int optimizer, double *c
   LLVMDisposeModule(module);
 }
 
+/* Initialize the functions for checked integers and add them to the module */
+static void init_checked_integers(LLVMModuleRef module, F_table *ft) {
+  // printf("cint declared\n");
+
+  // Declare test information
+  // char warn[] = "warn";
+  // LLVMTypeRef warn_args[] = {LLVMInt32Type()};
+  // LLVMTypeRef warn_type = LLVMFunctionType(LLVMInt32Type(), warn_args, 1, 0);
+  // LLVMValueRef warn_func = LLVMAddFunction(module, warn, warn_type);
+  // add_fentry(ft, warn, warn_func, warn_type);
+
+  // Declare negation
+  char cint_negation[] = "cint_negation";
+  LLVMTypeRef negation_args[] = {LLVMInt32Type(), LLVMPointerType(LLVMInt32Type(), 0)};
+  LLVMTypeRef negation_type = LLVMFunctionType(LLVMVoidType(), negation_args, 2, 0);
+  LLVMValueRef negation = LLVMAddFunction(module, cint_negation, negation_type);
+  add_fentry(ft, cint_negation, negation, negation_type);
+  // Declare addition
+  char cint_addition[] = "cint_addition";
+  LLVMTypeRef addition_args[] = {LLVMInt32Type(), LLVMInt32Type(), LLVMPointerType(LLVMInt32Type(), 0)};
+  LLVMTypeRef addition_type = LLVMFunctionType(LLVMVoidType(), addition_args, 3, 0);
+  LLVMValueRef addition = LLVMAddFunction(module, cint_addition, addition_type);
+  add_fentry(ft, cint_addition, addition, addition_type);
+  // Declare subtraction
+  char cint_subtraction[] = "cint_subtraction";
+  LLVMTypeRef subtraction_args[] = {LLVMInt32Type(), LLVMInt32Type(), LLVMPointerType(LLVMInt32Type(), 0)};
+  LLVMTypeRef subtraction_type = LLVMFunctionType(LLVMVoidType(), subtraction_args, 3, 0);
+  LLVMValueRef subtraction = LLVMAddFunction(module, cint_subtraction, subtraction_type);
+  add_fentry(ft, cint_subtraction, subtraction, subtraction_type);
+  // Declare multiplication
+  char cint_multiplication[] = "cint_multiplication";
+  LLVMTypeRef multiplication_args[] = {LLVMInt32Type(), LLVMInt32Type(), LLVMPointerType(LLVMInt32Type(), 0)};
+  LLVMTypeRef multiplication_type = LLVMFunctionType(LLVMVoidType(), multiplication_args, 3, 0);
+  LLVMValueRef multiplication = LLVMAddFunction(module, cint_multiplication, multiplication_type);
+  add_fentry(ft, cint_multiplication, multiplication, multiplication_type);
+  // Declare division
+  char cint_division[] = "cint_division";
+  LLVMTypeRef division_args[] = {LLVMInt32Type(), LLVMInt32Type(), LLVMPointerType(LLVMInt32Type(), 0)};
+  LLVMTypeRef division_type = LLVMFunctionType(LLVMVoidType(), division_args, 3, 0);
+  LLVMValueRef division = LLVMAddFunction(module, cint_division, division_type);
+  add_fentry(ft, cint_division, division, division_type);
+}
+
 /* Main function to generate the LLVM
  */
 int generate_llvm(Node *n, char *out) {
@@ -424,8 +473,8 @@ int generate_llvm(Node *n, char *out) {
 
   /* Generate the llvm_ir to file
    */
-  LLVMPrintModuleToFile(mod, out, &err);
-  if (err) fprintf(stderr, "Failure: LLVM IR cannot be written to the given file.\n");
+  // LLVMPrintModuleToFile(mod, out, &err);
+  // if (err) fprintf(stderr, "Failure: LLVM IR cannot be written to the given file.\n");
 
   /* House cleaning
    */
@@ -1087,6 +1136,7 @@ static void generate_simple_statement(LLVMBuilderRef builder, Node *n, F_table *
     case STMT_BLK:
       // Block increase with one level
       generate_block(builder, n->node_simple_stmt.blk, ft, vt, level+1, function);
+      destroy_ventry_bylevel(vt, level+1);
       break;
     case STMT_RETURN:
       // Return expression value
@@ -1322,6 +1372,9 @@ static LLVMValueRef generate_binop(LLVMBuilderRef builder, Node *n, F_table *ft,
   LLVMValueRef bool1, bool2;
   LLVMBasicBlockRef br1, br2, end;
   LLVMValueRef cmp_result;
+  // cint flag
+  int cint_flag = 0;
+
 
   // Get the value and type of the left hand
   switch (n->node_binop.op) {
@@ -1359,6 +1412,15 @@ static LLVMValueRef generate_binop(LLVMBuilderRef builder, Node *n, F_table *ft,
     exit(-1);
   }
 
+  // Check cint type (flag)
+  if (n->node_binop.op != BINOP_ASSIGN) {
+    Node *node_l = n->node_binop.exp_left;
+    Node *node_r = n->node_binop.exp_right;
+    if (node_l->node_exp.exp_type == CINT &&
+        node_r->node_exp.exp_type == CINT)
+        cint_flag = 1;
+  }
+
   // Compile LLVM IR
   if (l_type == LLVMInt32Type()) {
     // Case Int
@@ -1368,15 +1430,75 @@ static LLVMValueRef generate_binop(LLVMBuilderRef builder, Node *n, F_table *ft,
         break;
       case BINOP_ADD:
         ret_val = LLVMBuildNSWAdd(builder, l_val, r_val, "add");
+        /* Add routine to check binary additions */
+        if (cint_flag) {
+          // Store the return value in a pointer
+          LLVMValueRef ptr = LLVMBuildAlloca(builder, LLVMInt32Type(), "ptr");
+          LLVMBuildStore(builder, ret_val, ptr);
+          // Call the function cint_negation
+          LLVMValueRef calledf;
+          char function[] = "cint_addition";
+          // Find the called function and type
+          find_fentry(ft, function, &calledf);
+          // Set call arguments
+          LLVMValueRef args[] = {l_val, r_val, ptr};
+          // LLVMValueRef args[] = {val};
+          LLVMBuildCall(builder, calledf, args, 3, "");
+        }
         break;
       case BINOP_MUL:
         ret_val = LLVMBuildMul(builder, l_val, r_val, "mul");
+        /* Add routine to check binary multiplications */
+        if (cint_flag) {
+          // Store the return value in a pointer
+          LLVMValueRef ptr = LLVMBuildAlloca(builder, LLVMInt32Type(), "ptr");
+          LLVMBuildStore(builder, ret_val, ptr);
+          // Call the function cint_negation
+          LLVMValueRef calledf;
+          char function[] = "cint_multiplication";
+          // Find the called function and type
+          find_fentry(ft, function, &calledf);
+          // Set call arguments
+          LLVMValueRef args[] = {l_val, r_val, ptr};
+          // LLVMValueRef args[] = {val};
+          LLVMBuildCall(builder, calledf, args, 3, "");
+        }
         break;
       case BINOP_SUB:
         ret_val = LLVMBuildSub(builder, l_val, r_val, "sub");
+        /* Add routine to check binary subtractions */
+        if (cint_flag) {
+          // Store the return value in a pointer
+          LLVMValueRef ptr = LLVMBuildAlloca(builder, LLVMInt32Type(), "ptr");
+          LLVMBuildStore(builder, ret_val, ptr);
+          // Call the function cint_negation
+          LLVMValueRef calledf;
+          char function[] = "cint_subtraction";
+          // Find the called function and type
+          find_fentry(ft, function, &calledf);
+          // Set call arguments
+          LLVMValueRef args[] = {l_val, r_val, ptr};
+          // LLVMValueRef args[] = {val};
+          LLVMBuildCall(builder, calledf, args, 3, "");
+        }
         break;
       case BINOP_DIV:
         ret_val = LLVMBuildSDiv(builder, l_val, r_val, "div");
+        /* Add routine to check binary division */
+        if (cint_flag) {
+          // Store the return value in a pointer
+          LLVMValueRef ptr = LLVMBuildAlloca(builder, LLVMInt32Type(), "ptr");
+          LLVMBuildStore(builder, ret_val, ptr);
+          // Call the function cint_negation
+          LLVMValueRef calledf;
+          char function[] = "cint_division";
+          // Find the called function and type
+          find_fentry(ft, function, &calledf);
+          // Set call arguments
+          LLVMValueRef args[] = {l_val, r_val, ptr};
+          // LLVMValueRef args[] = {val};
+          LLVMBuildCall(builder, calledf, args, 3, "");
+        }
         break;
       case BINOP_EQ:
         ret_val = LLVMBuildICmp(builder, LLVMIntEQ, l_val, r_val, "icmp");
@@ -1580,9 +1702,31 @@ static LLVMValueRef generate_uop(LLVMBuilderRef builder, Node *n, F_table *ft, V
   LLVMTypeRef vtype = LLVMTypeOf(val);
 
   if (vtype == LLVMInt32Type()) {
+    // cint flag (check cint overflow)
+    int cint_flag = 0;
+    // Check the type of the expression
+    Node *u_exp = n->node_uop.exp;
+    if (u_exp->node_exp.exp_type == CINT)
+      cint_flag = 1;
+
     switch (n->node_uop.op) {
       case UOP_MINUS:
         ret_val = LLVMBuildSub(builder, LLVMConstInt(LLVMInt32Type(), 0, 0), val, "sub");
+        /* Add routine for checking unary negations */
+        if (cint_flag) {
+          // Store the return value in a pointer
+          LLVMValueRef ptr = LLVMBuildAlloca(builder, LLVMInt32Type(), "ptr");
+          LLVMBuildStore(builder, ret_val, ptr);
+          // Call the function cint_negation
+          LLVMValueRef calledf;
+          char function[] = "cint_negation";
+          // Find the called function and type
+          find_fentry(ft, function, &calledf);
+          // Set call arguments
+          LLVMValueRef args[] = {val, ptr};
+          // LLVMValueRef args[] = {val};
+          LLVMBuildCall(builder, calledf, args, 2, "");
+        }
         break;
       case UOP_NOT:
         flag_bool = LLVMBuildICmp(builder, LLVMIntNE, val, LLVMConstInt(LLVMInt32Type(), 0, 0), "tobool");

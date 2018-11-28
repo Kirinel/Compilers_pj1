@@ -1,0 +1,9 @@
+def int run() {
+  # Raise unary negation overflow (101)
+  cint $x = -2147483648;
+  cint $y = -$x;
+
+  print $y;
+
+  return 0;
+}

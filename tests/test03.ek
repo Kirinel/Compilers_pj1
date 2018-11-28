@@ -8,7 +8,7 @@ def void inc(ref int $n, ref int $b) {
   print $n;
 }
 
-def int run() {
+def int subvoid() {
   int $a = 5;
   int $b = 1;
   if ($a > 0)
@@ -33,23 +33,4 @@ def int run() {
   print $c;
 
   print "if test";
-
-  int $m = 4;
-  if ($m > 0) {
-    int $n = $m;
-    $n = $n + 1;
-  } else {
-    $m = -$m;
-  }
-
-  {
-    int $n = 1;
-  }
-  
-  print $m;
-  #print $n;
-
-  #print "Welcome to walkure world!";
-  #print $a;
-  return 7 + 8;
 }

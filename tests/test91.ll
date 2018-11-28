@@ -54,7 +54,7 @@ if_end:                                           ; preds = %entry
   store i32 %fib10, i32* %b
   %tmp11 = load i32, i32* %a
   %tmp12 = load i32, i32* %b
-  %add = add i32 %tmp11, %tmp12
+  %add = add nsw i32 %tmp11, %tmp12
   ret i32 %add
 
 if_yes1:                                          ; preds = %if_yes
@@ -70,10 +70,10 @@ entry:
   store i32* %0, i32** %n
   %tmp = load i32*, i32** %n
   %tmp1 = load i32, i32* %tmp
-  %add = add i32 %tmp1, 1
+  %add = add nsw i32 %tmp1, 1
   %tmp2 = load i32*, i32** %n
   %tmp3 = load i32, i32* %tmp2
-  %add4 = add i32 %tmp3, 1
+  %add4 = add nsw i32 %tmp3, 1
   %ptr = load i32*, i32** %n
   %varval = load i32, i32* %ptr
   store i32 %add4, i32* %ptr

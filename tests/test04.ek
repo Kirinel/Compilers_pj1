@@ -1,0 +1,17 @@
+def int run() {
+  # raise division overflow (105)
+  #cint $x = 20;
+  #cint $y = 0;
+  #cint $z = $x / $y;
+
+  #print $z;
+
+  # raise division overflow (105)
+  cint $a = -2147483648;
+  cint $b = -1;
+  cint $c = $a / $b;
+
+  print $c;
+
+  return 0;
+}

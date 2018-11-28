@@ -121,9 +121,6 @@ int main(int argc, char *argv[]) {
 	if (Oflag)
 		printf("Optimization (level 3) is enabled.\n");
 
-	if (llvmflag)
-		printf("Exporting LLVM IR......\n");
-
 	if (!outflag) {
 		fprintf(stderr, "\nError: The output filename must be specified!\nExiting the program...\n");
 		exit(-1);
@@ -150,17 +147,18 @@ int main(int argc, char *argv[]) {
 			// Compile the whole program
 			compile_llvm(root, outf, 1, Oflag, cl_args, len_args);
 		else
-			compile_llvm(root, "test.ll", 0, Oflag, cl_args, len_args);
+			compile_llvm(root, "./testcases/test.ll", 0, Oflag, cl_args, len_args);
 	else
 		fprintf(stderr, "Warning: only jit option is enabled for this program.\n");
 
-
+	if (llvmflag)
+		printf("Exporting LLVM IR......\n");
 
 	/* House Keeping */
 	free_ast(root);
 	free(cl_args);
 
-	printf("Exiting the Program...\n");
+	// printf("Exiting the Program...\n");
 
 	// Exit
 	return 0;

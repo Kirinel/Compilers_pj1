@@ -224,5 +224,7 @@ def int run() {
   print "okay -- 5pts (100/100)";
   print "";
 
+  print "Test complete";
+
   return 0;
 }

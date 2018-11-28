@@ -1,3 +1,6 @@
+#ifndef LLVM_H
+#define LLVM_H
+
 #include "def.h"
 
 /* The Main workfunction to generate LLVM IR
@@ -13,3 +16,5 @@
  *    use JIT to compile the code
  */
 void compile_llvm(Node *n, char *out, int write_to_file, int optimizer, double *cl_args, int cl_len);
+
+#endif
